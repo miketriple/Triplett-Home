@@ -1,10 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>
-    Triplett Home App
-  </title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The 12414</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            color: #1a1a2e;
+            min-height: 100vh;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Login Screen */
+        #login-screen {
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .login-box {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+        }
+
+        .app-title {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 0.25rem;
+            color: #1a1a2e;
+        }
+
+        .app-subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border: 2px solid #e8e8e8;
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #4f46e5;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.85rem;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #4338ca;
+        }
+
+        button:disabled {
+            background: #a5b4fc;
+            cursor: not-allowed;
+        }
+
+        .error-msg {
+            color: #ef4444;
+            font-size: 0.875rem;
+            text-align: center;
+            margin-top: 0.75rem;
+            min-height: 1.25rem;
+        }
+
+        /* Home Screen */
+        .app-header {
+            background: #1a1a2e;
+            color: white;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-header h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .user-info {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+
+        .logout-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            width: auto;
+            padding: 0.4rem 0.85rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .home-content {
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .welcome-msg {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            color: #555;
+        }
+
+        .list-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .list-card {
+            background: white;
+            border-radius: 14px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            border: none;
+            text-align: left;
+            width: 100%;
+        }
+
+        .list-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .list-card-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .list-card h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: #1a1a2e;
+        }
+
+        .list-card p {
+            font-size: 0.875rem;
+            color: #888;
+        }
+
+        /* Todo Screen */
+        .todo-header {
+            background: #1a1a2e;
+            color: white;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .back-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            width: auto;
+            padding: 0;
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .back-btn:hover {
+            background: transparent;
+            opacity: 0.7;
+        }
+
+        .todo-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .todo-content {
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .add-todo {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .add-todo input {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .add-todo button {
+            width: auto;
+            padding: 0.85rem 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .todo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .todo-item {
+            background: white;
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .todo-item input[type="checkbox"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin: 0;
+            cursor: pointer;
+            accent-color: #4f46e5;
+            flex-shrink: 0;
+        }
+
+        .todo-item-text {
+            flex: 1;
+            font-size: 0.95rem;
+        }
+
+        .todo-item-text.completed {
+            text-decoration: line-through;
+            color: #aaa;
+        }
+
+        .todo-item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid #e8e8e8;
+            color: #555;
+            width: auto;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .action-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .action-btn.delete {
+            color: #ef4444;
+            border-color: #fecaca;
+        }
+
+        .action-btn.delete:hover {
+            background: #fef2f2;
+        }
+
+        .action-btn.share {
+            color: #4f46e5;
+            border-color: #c7d2fe;
+        }
+
+        .action-btn.share:hover {
+            background: #eef2ff;
+        }
+
+        .empty-msg {
+            text-align: center;
+            color: #aaa;
+            padding: 3rem 0;
+            font-size: 0.95rem;
+        }
+
+        .loading-msg {
+            text-align: center;
+            color: #aaa;
+            padding: 2rem 0;
+        }
+
+        .shared-badge {
+            font-size: 0.7rem;
+            background: #eef2ff;
+            color: #4f46e5;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+    </style>
 </head>
 <body>
-  <p>
-    This is the Triplett Home App!
-  </p>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen active">
+        <div class="login-box">
+            <div class="app-title">The 12414</div>
+            <div class="app-subtitle">Family Hub</div>
+            <input type="text" id="login-username" placeholder="Your name" autocomplete="username" />
+            <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" />
+            <button id="login-btn" onclick="login()">Sign In</button>
+            <div class="error-msg" id="login-error"></div>
+        </div>
+    </div>
+
+    <!-- Home Screen -->
+    <div id="home-screen" class="screen">
+        <div class="app-header">
+            <h1>The 12414</h1>
+            <button class="logout-btn" onclick="logout()">Sign Out</button>
+        </div>
+        <div class="home-content">
+            <div class="welcome-msg" id="welcome-msg"></div>
+            <div class="list-cards">
+                <button class="list-card" onclick="showTodo('personal')">
+                    <div class="list-card-icon">📝</div>
+                    <h2>My To-Do List</h2>
+                    <p>Your personal tasks</p>
+                </button>
+                <button class="list-card" onclick="showTodo('household')">
+                    <div class="list-card-icon">🏠</div>
+                    <h2>Household To-Do</h2>
+                    <p>Shared tasks for everyone</p>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Todo Screen -->
+    <div id="todo-screen" class="screen">
+        <div class="todo-header">
+            <button class="back-btn" onclick="showHome()">←</button>
+            <h2 id="todo-title"></h2>
+        </div>
+        <div class="todo-content">
+            <div class="add-todo">
+                <input type="text" id="new-todo-input" placeholder="Add a task..." />
+                <button onclick="addTodo()">Add</button>
+            </div>
+            <div class="todo-list" id="todo-list">
+                <div class="loading-msg">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ─── Configuration ───────────────────────────────────────────────
+        const AUTH_ENDPOINT = 'https://lrs.the12414.com/auth/token';
+        const LRS_BASE = 'https://lrs.the12414.com';
+        const ACTIVITY_BASE = 'https://the12414.com/activities';
+
+        // ─── Session State ────────────────────────────────────────────────
+        let session = null;
+        let currentListType = null;
+
+        // ─── Screen Navigation ────────────────────────────────────────────
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function showHome() {
+            showScreen('home-screen');
+        }
+
+        function showTodo(type) {
+            currentListType = type;
+            const title = type === 'personal' ? 'My To-Do List' : 'Household To-Do';
+            document.getElementById('todo-title').textContent = title;
+            showScreen('todo-screen');
+            loadTodos();
+        }
+
+        // ─── Authentication ───────────────────────────────────────────────
+        async function login() {
+            const username = document.getElementById('login-username').value.trim().toLowerCase();
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+            const btn = document.getElementById('login-btn');
+
+            errorEl.textContent = '';
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+
+            try {
+                const response = await fetch(AUTH_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    errorEl.textContent = 'Invalid name or password.';
+                    return;
+                }
+
+                const data = await response.json();
+
+                session = {
+                    token: data.token,
+                    displayName: data.display_name,
+                    mbox: data.mbox,
+                    traxUsername: data.trax_username,
+                    traxPassword: data.trax_password,
+                    endpoint: data.trax_endpoint
+                };
+
+                document.getElementById('welcome-msg').textContent = 'Welcome back, ' + session.displayName + '!';
+                showScreen('home-screen');
+
+            } catch (err) {
+                errorEl.textContent = 'Could not connect. Please try again.';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+        }
+
+        function logout() {
+            session = null;
+            currentListType = null;
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
+            document.getElementById('login-error').textContent = '';
+            showScreen('login-screen');
+        }
+
+        // Allow Enter key on login fields
+        document.getElementById('login-password').addEventListener('keydown', e => {
+            if (e.key === 'Enter') login();
+        });
+
+        // ─── xAPI Helpers ─────────────────────────────────────────────────
+        function xapiHeaders() {
+            return {
+                'Authorization': 'Basic ' + btoa(session.traxUsername + ':' + session.traxPassword),
+                'Content-Type': 'application/json',
+                'X-Experience-API-Version': '1.0.3'
+            };
+        }
+
+        function actor() {
+            return {
+                name: session.displayName,
+                mbox: session.mbox
+            };
+        }
+
+        function sendStatement(verb, verbDisplay, activityId, activityName) {
+            const statement = {
+                actor: actor(),
+                verb: {
+                    id: 'https://the12414.com/verbs/' + verb,
+                    display: { 'en-US': verbDisplay }
+                },
+                object: {
+                    id: activityId,
+                    objectType: 'Activity',
+                    definition: {
+                        name: { 'en-US': activityName }
+                    }
+                }
+            };
+
+            // Determine which endpoint to use based on list type
+            const traxEndpoint = buildEndpoint();
+
+            fetch(traxEndpoint + '/statements', {
+                method: 'POST',
+                headers: xapiHeaders(),
+                body: JSON.stringify(statement)
+            }).catch(err => console.warn('Statement failed:', err));
+        }
+
+        // ─── xAPI Document Storage ────────────────────────────────────────
+        function buildEndpoint() {
+            // Each user has their own TRAX client with its own endpoint path
+            // We'll use the LRS base and reconstruct based on stored credentials
+            // For now we store the endpoint returned from auth
+            return session.endpoint || LRS_BASE + '/trax/api';
+        }
+
+        async function getDocument(url) {
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: xapiHeaders()
+                });
+                if (response.status === 404) return null;
+                if (!response.ok) return null;
+                return await response.json();
+            } catch {
+                return null;
+            }
+        }
+
+        async function putDocument(url, data) {
+            await fetch(url, {
+                method: 'PUT',
+                headers: xapiHeaders(),
+                body: JSON.stringify(data)
+            });
+        }
+
+        // ─── Personal To-Do (State API) ───────────────────────────────────
+        function personalStateUrl() {
+            const agentParam = encodeURIComponent(JSON.stringify({
+                mbox: session.mbox
+            }));
+            return session.endpoint + '/activities/state'
+                + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/personal-todo')
+                + '&agent=' + agentParam
+                + '&stateId=personal-todos';
+        }
+
+        // ─── Household To-Do (Activity Profile API) ───────────────────────
+        function householdProfileUrl() {
+            return session.endpoint + '/activities/profile'
+                + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/household-todo')
+                + '&profileId=household-todos';
+        }
+
+        // ─── Load Todos ───────────────────────────────────────────────────
+        async function loadTodos() {
+            const listEl = document.getElementById('todo-list');
+            listEl.innerHTML = '<div class="loading-msg">Loading...</div>';
+
+            const url = currentListType === 'personal'
+                ? personalStateUrl()
+                : householdProfileUrl();
+
+            const data = await getDocument(url);
+            const items = data ? data.items : [];
+            renderTodos(items);
+        }
+
+        // ─── Render Todos ─────────────────────────────────────────────────
+        function renderTodos(items) {
+            const listEl = document.getElementById('todo-list');
+
+            if (items.length === 0) {
+                listEl.innerHTML = '<div class="empty-msg">No tasks yet. Add one above!</div>';
+                return;
+            }
+
+            listEl.innerHTML = '';
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'todo-item';
+                div.innerHTML = `
+                    <input type="checkbox" ${item.completed ? 'checked' : ''}
+                        onchange="toggleTodo('${item.id}', this.checked)" />
+                    <span class="todo-item-text ${item.completed ? 'completed' : ''}">
+                        ${escapeHtml(item.text)}
+                    </span>
+                    ${item.sharedToHousehold ? '<span class="shared-badge">shared</span>' : ''}
+                    <div class="todo-item-actions">
+                        ${currentListType === 'personal' && !item.sharedToHousehold
+                            ? `<button class="action-btn share" onclick="shareToHousehold('${item.id}')">Share</button>`
+                            : ''}
+                        <button class="action-btn delete" onclick="deleteTodo('${item.id}')">Delete</button>
+                    </div>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        // ─── Add Todo ─────────────────────────────────────────────────────
+        async function addTodo() {
+            const input = document.getElementById('new-todo-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const items = await getCurrentItems();
+            const newItem = {
+                id: crypto.randomUUID(),
+                text: text,
+                completed: false,
+                createdBy: session.displayName,
+                createdAt: new Date().toISOString(),
+                sharedToHousehold: false
+            };
+
+            items.push(newItem);
+            await saveItems(items);
+            input.value = '';
+            renderTodos(items);
+
+            sendStatement('added', 'added', ACTIVITY_BASE + '/todo/' + newItem.id, text);
+        }
+
+        // Allow Enter key on add input
+        document.getElementById('new-todo-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') addTodo();
+        });
+
+        // ─── Toggle Complete ──────────────────────────────────────────────
+        async function toggleTodo(id, completed) {
+            const items = await getCurrentItems();
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+
+            item.completed = completed;
+            await saveItems(items);
+            renderTodos(items);
+
+            const verb = completed ? 'completed' : 'uncompleted';
+            sendStatement(verb, verb, ACTIVITY_BASE + '/todo/' + id, item.text);
+        }
+
+        // ─── Delete Todo ──────────────────────────────────────────────────
+        async function deleteTodo(id) {
+            const items = await getCurrentItems();
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+
+            const filtered = items.filter(i => i.id !== id);
+            await saveItems(filtered);
+            renderTodos(filtered);
+
+            sendStatement('deleted', 'deleted', ACTIVITY_BASE + '/todo/' + id, item.text);
+        }
+
+        // ─── Share to Household ───────────────────────────────────────────
+        async function shareToHousehold(id) {
+            // Get personal items
+            const personalItems = await getCurrentItems();
+            const item = personalItems.find(i => i.id === id);
+            if (!item) return;
+
+            // Mark as shared on personal list
+            item.sharedToHousehold = true;
+            await saveItems(personalItems);
+
+            // Add to household list
+            const savedType = currentListType;
+            currentListType = 'household';
+            const householdItems = await getCurrentItems();
+            householdItems.push({
+                ...item,
+                sharedBy: session.displayName,
+                sharedAt: new Date().toISOString()
+            });
+            await saveItems(householdItems);
+            currentListType = savedType;
+
+            renderTodos(personalItems);
+            sendStatement('shared', 'shared', ACTIVITY_BASE + '/todo/' + id, item.text);
+        }
+
+        // ─── Storage Helpers ──────────────────────────────────────────────
+        async function getCurrentItems() {
+            const url = currentListType === 'personal'
+                ? personalStateUrl()
+                : householdProfileUrl();
+            const data = await getDocument(url);
+            return data ? data.items : [];
+        }
+
+        async function saveItems(items) {
+            const url = currentListType === 'personal'
+                ? personalStateUrl()
+                : householdProfileUrl();
+            await putDocument(url, { items });
+        }
+
+        // ─── Utility ──────────────────────────────────────────────────────
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(text));
+            return div.innerHTML;
+        }
+    </script>
 </body>
+</html>
