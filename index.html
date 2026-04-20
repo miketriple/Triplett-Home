@@ -530,26 +530,38 @@
         }
 
         async function getDocument(url) {
-            try {
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: xapiHeaders()
-                });
-                if (response.status === 404) return null;
-                if (!response.ok) return null;
-                return await response.json();
-            } catch {
-                return null;
-            }
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: xapiHeaders()
+            });
+        if (response.status === 404) return { data: null, etag: null };
+        if (!response.ok) return { data: null, etag: null };
+        const etag = response.headers.get('ETag');
+        const data = await response.json();
+        return { data, etag };
+        } catch {
+        return { data: null, etag: null };
+        }
         }
 
-        async function putDocument(url, data) {
-            await fetch(url, {
-                method: 'PUT',
-                headers: xapiHeaders(),
-                body: JSON.stringify(data)
-            });
-        }
+        async function putDocument(url, data, etag = null) {
+        const headers = {
+        ...xapiHeaders(),
+        'If-None-Match': etag ? undefined : '*',
+        'If-Match': etag || undefined
+        };
+
+    // Clean up undefined headers
+    Object.keys(headers).forEach(k => headers[k] === undefined && delete headers[k]);
+
+    const response = await fetch(url, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify(data)
+    });
+    return response;
+}
 
         // ─── Personal To-Do (State API) ───────────────────────────────────
         function personalStateUrl() {
@@ -620,7 +632,7 @@
             const text = input.value.trim();
             if (!text) return;
 
-            const items = await getCurrentItems();
+            const { items, etag } = await getCurrentItems();
             const newItem = {
                 id: crypto.randomUUID(),
                 text: text,
@@ -631,7 +643,7 @@
             };
 
             items.push(newItem);
-            await saveItems(items);
+            await saveItems(items, etag);
             input.value = '';
             renderTodos(items);
 
@@ -645,12 +657,12 @@
 
         // ─── Toggle Complete ──────────────────────────────────────────────
         async function toggleTodo(id, completed) {
-            const items = await getCurrentItems();
+            const { items, etag } = await getCurrentItems();
             const item = items.find(i => i.id === id);
             if (!item) return;
 
             item.completed = completed;
-            await saveItems(items);
+            await saveItems(items, etag);
             renderTodos(items);
 
             const verb = completed ? 'completed' : 'uncompleted';
@@ -659,12 +671,12 @@
 
         // ─── Delete Todo ──────────────────────────────────────────────────
         async function deleteTodo(id) {
-            const items = await getCurrentItems();
+            const { items, etag } = await getCurrentItems();
             const item = items.find(i => i.id === id);
             if (!item) return;
 
             const filtered = items.filter(i => i.id !== id);
-            await saveItems(filtered);
+            await saveItems(filtered, etag);
             renderTodos(filtered);
 
             sendStatement('deleted', 'deleted', ACTIVITY_BASE + '/todo/' + id, item.text);
@@ -673,24 +685,24 @@
         // ─── Share to Household ───────────────────────────────────────────
         async function shareToHousehold(id) {
             // Get personal items
-            const personalItems = await getCurrentItems();
+            const { personalItems, etag } = await getCurrentItems();
             const item = personalItems.find(i => i.id === id);
             if (!item) return;
 
             // Mark as shared on personal list
             item.sharedToHousehold = true;
-            await saveItems(personalItems);
+            await saveItems(personalItems, etag);
 
             // Add to household list
             const savedType = currentListType;
             currentListType = 'household';
-            const householdItems = await getCurrentItems();
+            const { householdItems, etag } = await getCurrentItems();
             householdItems.push({
                 ...item,
                 sharedBy: session.displayName,
                 sharedAt: new Date().toISOString()
             });
-            await saveItems(householdItems);
+            await saveItems(householdItems, etag);
             currentListType = savedType;
 
             renderTodos(personalItems);
@@ -702,16 +714,16 @@
             const url = currentListType === 'personal'
                 ? personalStateUrl()
                 : householdProfileUrl();
-            const data = await getDocument(url);
-            return data ? data.items : [];
+            const { data, etag } = await getDocument(url);
+            return { items: data ? data.items : [], etag };
         }
 
-        async function saveItems(items) {
+        async function saveItems(items, etag = null) {
             const url = currentListType === 'personal'
                 ? personalStateUrl()
                 : householdProfileUrl();
-            await putDocument(url, { items });
-        }
+            await putDocument(url, { items }, etag);
+}
 
         // ─── Utility ──────────────────────────────────────────────────────
         function escapeHtml(text) {
