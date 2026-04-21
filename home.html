@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The 12414 — Home</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/theme.js"></script>
+</head>
+<body>
+
+<header class="app-header">
+    <a href="home.html" class="app-name">The 12414</a>
+    <div class="header-actions">
+        <span class="header-user" id="header-user"></span>
+        <button class="btn btn-ghost" onclick="Theme.openPanel()">⚙</button>
+        <button class="btn btn-ghost" onclick="Auth.logout()">Sign Out</button>
+    </div>
+</header>
+
+<div class="welcome-banner">
+    <h2 id="welcome-msg">Welcome home</h2>
+    <p id="welcome-date"></p>
+</div>
+
+<div class="page-content">
+    <div class="section-label">Quick Access</div>
+    <div class="feature-grid">
+
+        <a href="todo.html" class="feature-card">
+            <span class="feature-icon">📝</span>
+            <h3>My To-Do</h3>
+            <p>Your personal tasks</p>
+        </a>
+
+        <a href="todo.html?list=household" class="feature-card">
+            <span class="feature-icon">🏠</span>
+            <h3>Household</h3>
+            <p>Shared tasks</p>
+        </a>
+
+        <a href="calendar.html" class="feature-card">
+            <span class="feature-icon">📅</span>
+            <h3>Calendar</h3>
+            <p>Family events</p>
+        </a>
+
+        <div class="feature-card coming-soon">
+            <span class="feature-icon">🛒</span>
+            <h3>Grocery</h3>
+            <p>Shopping list</p>
+            <span class="coming-tag">Coming soon</span>
+        </div>
+
+        <div class="feature-card coming-soon">
+            <span class="feature-icon">✅</span>
+            <h3>Chores</h3>
+            <p>Who does what</p>
+            <span class="coming-tag">Coming soon</span>
+        </div>
+
+        <div class="feature-card coming-soon">
+            <span class="feature-icon">💬</span>
+            <h3>Notes</h3>
+            <p>Leave a message</p>
+            <span class="coming-tag">Coming soon</span>
+        </div>
+
+    </div>
+</div>
+
+<!-- Theme Panel -->
+<div id="theme-overlay" class="theme-overlay" onclick="App.handleOverlayClick(event, 'theme-overlay')">
+    <div class="theme-panel">
+        <div class="theme-panel-header">
+            <h3>Appearance</h3>
+            <button class="btn-icon" onclick="Theme.closePanel()">✕</button>
+        </div>
+        <div class="section-label">Color Theme</div>
+        <div id="theme-swatches" class="theme-swatches"></div>
+        <div class="section-label">Mode</div>
+        <div id="mode-buttons" class="mode-buttons"></div>
+    </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+    const session = Auth.requireSession();
+
+    if (session) {
+        Theme.renderPanel();
+        App.setHeaderUser(session);
+
+        document.getElementById('welcome-msg').textContent =
+            'Welcome, ' + session.displayName + '!';
+
+        document.getElementById('welcome-date').textContent =
+            new Date().toLocaleDateString('en-US', {
+                weekday: 'long', month: 'long', day: 'numeric'
+            });
+    }
+</script>
+</body>
+</html>
