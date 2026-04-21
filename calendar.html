@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The 12414 — Calendar</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/theme.js"></script>
+</head>
+<body>
+
+<header class="sub-header">
+    <button class="btn-back" onclick="window.location.href='home.html'">←</button>
+    <h2>Family Calendar</h2>
+    <button class="btn btn-ghost" onclick="Theme.openPanel()">⚙</button>
+</header>
+
+<div class="page-content">
+
+    <!-- Month Navigation -->
+    <div class="cal-nav">
+        <button class="btn btn-secondary" onclick="changeMonth(-1)">‹</button>
+        <div class="cal-month-label" id="cal-month-label"></div>
+        <button class="btn btn-secondary" onclick="changeMonth(1)">›</button>
+    </div>
+
+    <!-- Calendar Grid -->
+    <div class="cal-grid" id="cal-grid"></div>
+
+    <!-- Upcoming Events -->
+    <div class="section-label mt-2" id="events-section-label">Upcoming Events</div>
+    <div id="cal-event-list" class="cal-event-list">
+        <div class="loading">Loading...</div>
+    </div>
+
+</div>
+
+<!-- Add Event Modal -->
+<div id="event-modal" class="modal-overlay" onclick="handleModalClick(event)">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modal-date-label">Add Event</h3>
+            <button class="btn-icon" onclick="closeModal()">✕</button>
+        </div>
+        <input class="input" type="text" id="event-title" placeholder="Event name" />
+        <input class="input" type="time" id="event-time" />
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary"   onclick="saveEvent()">Save Event</button>
+        </div>
+    </div>
+</div>
+
+<!-- Theme Panel -->
+<div id="theme-overlay" class="theme-overlay" onclick="App.handleOverlayClick(event, 'theme-overlay')">
+    <div class="theme-panel">
+        <div class="theme-panel-header">
+            <h3>Appearance</h3>
+            <button class="btn-icon" onclick="Theme.closePanel()">✕</button>
+        </div>
+        <div class="section-label">Color Theme</div>
+        <div id="theme-swatches" class="theme-swatches"></div>
+        <div class="section-label">Mode</div>
+        <div id="mode-buttons" class="mode-buttons"></div>
+    </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/xapi.js"></script>
+<script src="js/app.js"></script>
+<script>
+    const session = Auth.requireSession();
+    let currentDate  = new Date();
+    let selectedDate = null;
+    let allEvents    = [];
+
+    if (session) {
+        Theme.renderPanel();
+        loadCalendar();
+    }
+
+    // ── Load ───────────────────────────────────────────────────
+
+    async function loadCalendar() {
+        const url  = XApi.calendarUrl(session);
+        const data = await XApi.getDocument(session, url);
+        allEvents  = data ? data.events : [];
+        renderGrid();
+        renderUpcoming();
+    }
+
+    // ── Calendar Grid ──────────────────────────────────────────
+
+    function renderGrid() {
+        const year  = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        document.getElementById('cal-month-label').textContent =
+            new Date(year, month, 1).toLocaleDateString('en-US', {
+                month: 'long', year: 'numeric'
+            });
+
+        const grid        = document.getElementById('cal-grid');
+        const today       = new Date();
+        const firstDay    = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrev  = new Date(year, month, 0).getDate();
+
+        const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        grid.innerHTML = dayLabels.map(d => `<div class="cal-day-label">${d}</div>`).join('');
+
+        // Days from previous month
+        for (let i = firstDay - 1; i >= 0; i--) {
+            grid.innerHTML += `<div class="cal-day other-month">${daysInPrev - i}</div>`;
+        }
+
+        // Current month days
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = toDateStr(year, month + 1, d);
+            const isToday = today.getFullYear() === year
+                         && today.getMonth()    === month
+                         && today.getDate()     === d;
+            const hasEvents = allEvents.some(e => e.date === dateStr);
+
+            grid.innerHTML += `
+                <div class="cal-day ${isToday ? 'today' : ''} ${hasEvents ? 'has-events' : ''}"
+                     onclick="openAddEvent('${dateStr}', ${d})">
+                    ${d}
+                </div>`;
+        }
+
+        // Padding days for next month
+        const totalCells = firstDay + daysInMonth;
+        const remaining  = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+        for (let d = 1; d <= remaining; d++) {
+            grid.innerHTML += `<div class="cal-day other-month">${d}</div>`;
+        }
+    }
+
+    // ── Upcoming Events ────────────────────────────────────────
+
+    function renderUpcoming() {
+        const container = document.getElementById('cal-event-list');
+        const todayStr  = toDateStr(
+            new Date().getFullYear(),
+            new Date().getMonth() + 1,
+            new Date().getDate()
+        );
+
+        const upcoming = allEvents
+            .filter(e => e.date >= todayStr)
+            .sort((a, b) => {
+                if (a.date !== b.date) return a.date.localeCompare(b.date);
+                return (a.time || '').localeCompare(b.time || '');
+            })
+            .slice(0, 15);
+
+        if (upcoming.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <span class="empty-icon">📅</span>
+                    <p>No upcoming events. Tap any day to add one!</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = upcoming.map(e => `
+            <div class="cal-event-item">
+                <div class="cal-event-dot"></div>
+                <div class="cal-event-body">
+                    <div class="cal-event-title">${App.escapeHtml(e.title)}</div>
+                    <div class="cal-event-meta">
+                        ${e.time ? e.time + ' · ' : ''}${formatEventDate(e.date)} · ${App.escapeHtml(e.createdBy)}
+                    </div>
+                </div>
+                <button class="btn-danger" onclick="deleteEvent('${e.id}')">✕</button>
+            </div>
+        `).join('');
+    }
+
+    // ── Add Event ──────────────────────────────────────────────
+
+    function openAddEvent(dateStr, dayNum) {
+        selectedDate = dateStr;
+        const [y, m] = dateStr.split('-').map(Number);
+        const label  = new Date(y, m - 1, dayNum).toLocaleDateString('en-US', {
+            month: 'long', day: 'numeric'
+        });
+
+        document.getElementById('modal-date-label').textContent = 'Add Event — ' + label;
+        document.getElementById('event-title').value = '';
+        document.getElementById('event-time').value  = '';
+        document.getElementById('event-modal').classList.add('open');
+        setTimeout(() => document.getElementById('event-title').focus(), 100);
+    }
+
+    function closeModal() {
+        document.getElementById('event-modal').classList.remove('open');
+        selectedDate = null;
+    }
+
+    function handleModalClick(e) {
+        if (e.target.id === 'event-modal') closeModal();
+    }
+
+    async function saveEvent() {
+        const title = document.getElementById('event-title').value.trim();
+        if (!title || !selectedDate) return;
+
+        const time = document.getElementById('event-time').value;
+        const url  = XApi.calendarUrl(session);
+        const data = await XApi.getDocument(session, url);
+        const events = data ? data.events : [];
+
+        const newEvent = {
+            id:        App.randomId(),
+            title,
+            date:      selectedDate,
+            time:      time || null,
+            createdBy: session.displayName,
+            createdAt: new Date().toISOString(),
+        };
+
+        events.push(newEvent);
+        const response = await XApi.putDocument(session, url, { events });
+
+        if (response.ok || response.status === 204) {
+            allEvents = events;
+            closeModal();
+            renderGrid();
+            renderUpcoming();
+            App.showToast('Event added!');
+            XApi.sendStatement(session, 'scheduled', 'scheduled',
+                ACTIVITY_BASE + '/calendar/' + newEvent.id, title);
+        } else {
+            App.showToast('Could not save. Please try again.', 'error');
+        }
+    }
+
+    document.getElementById('event-title').addEventListener('keydown', e => {
+        if (e.key === 'Enter') saveEvent();
+    });
+
+    // ── Delete Event ───────────────────────────────────────────
+
+    async function deleteEvent(id) {
+        const url  = XApi.calendarUrl(session);
+        const data = await XApi.getDocument(session, url);
+        if (!data) return;
+
+        data.events = data.events.filter(e => e.id !== id);
+        await XApi.putDocument(session, url, data);
+        allEvents = data.events;
+        renderGrid();
+        renderUpcoming();
+        App.showToast('Event removed.');
+    }
+
+    // ── Month Navigation ───────────────────────────────────────
+
+    function changeMonth(dir) {
+        currentDate.setMonth(currentDate.getMonth() + dir);
+        renderGrid();
+    }
+
+    // ── Helpers ────────────────────────────────────────────────
+
+    function toDateStr(y, m, d) {
+        return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    }
+
+    function formatEventDate(dateStr) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric'
+        });
+    }
+</script>
+</body>
+</html>
