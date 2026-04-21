@@ -86,6 +86,8 @@ const XApi = {
     // If-None-Match: * → creating for the first time (no ETag)
     // If-Match: [etag]  → updating an existing document
     async putDocument(session, url, data) {
+        console.log('PUT attempt, cached ETag:', _etags[url], 'URL:', url.split('?')[1]);
+
         const headers = { ...this.headers(session) };
         const etag = _etags[url];
 
@@ -95,18 +97,58 @@ const XApi = {
             headers['If-None-Match'] = '*';
         }
 
-        const response = await fetch(url, {
+        let response = await fetch(url, {
             method: 'PUT',
             headers,
             body: JSON.stringify(data),
         });
 
-        // Update cached ETag after a successful write
+        console.log('PUT response status:', response.status);
+        console.log('PUT response ETag header:', response.headers.get('ETag'));
+
+        if (response.status === 412) {
+            console.log('412 received, refreshing ETag...');
+            await this._refreshEtag(session, url);
+            console.log('ETag after refresh:', _etags[url]);
+
+            const retryHeaders = { ...this.headers(session) };
+            if (_etags[url]) {
+                retryHeaders['If-Match'] = _etags[url];
+            } else {
+                retryHeaders['If-None-Match'] = '*';
+            }
+
+            response = await fetch(url, {
+                method: 'PUT',
+                headers: retryHeaders,
+                body: JSON.stringify(data),
+            });
+            console.log('Retry response status:', response.status);
+        }
+
         if (response.ok || response.status === 204) {
-            _etags[url] = response.headers.get('ETag') || etag;
+            await this._refreshEtag(session, url);
+            console.log('ETag after success refresh:', _etags[url]);
         }
 
         return response;
+    },
+
+    // Always GET after write to keep ETag cache fresh
+    async _refreshEtag(session, url) {
+        try {
+            const r = await fetch(url, {
+                method: 'GET',
+                headers: this.headers(session),
+            });
+            if (r.ok) {
+                _etags[url] = r.headers.get('ETag');
+            } else if (r.status === 404) {
+                _etags[url] = null;
+            }
+        } catch {
+            // silently fail — next write will retry
+        }
     },
 
     // ── URL Builders ──────────────────────────────────────────
