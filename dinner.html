@@ -1041,11 +1041,22 @@
         }
 
         async function saveLibrary() {
-            await XApi.putDocument(session, libraryUrl(), library);
+            const response = await XApi.putDocument(session, libraryUrl(), library);
+            if (!response.ok && response.status !== 204) {
+                App.showToast('Save failed. Please try again.', 'error');
+                // Re-sync local state from TRAX
+                const fresh = await XApi.getDocument(session, libraryUrl());
+                if (fresh) library = fresh;
+            }
         }
 
         async function saveDinnerCal() {
-            await XApi.putDocument(session, dinnerCalUrl(), dinnerCal);
+            const response = await XApi.putDocument(session, dinnerCalUrl(), dinnerCal);
+            if (!response.ok && response.status !== 204) {
+                App.showToast('Save failed. Please try again.', 'error');
+                const fresh = await XApi.getDocument(session, dinnerCalUrl());
+                if (fresh) dinnerCal = fresh;
+            }
         }
 
         function getWeekDays() {
