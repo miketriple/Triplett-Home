@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The 12414 — Grocery</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/theme.js"></script>
+</head>
+<body>
+
+<header class="sub-header">
+    <button class="btn-back" onclick="window.location.href='home.html'">←</button>
+    <h2>Grocery List</h2>
+    <button class="btn btn-ghost" onclick="Theme.openPanel()">⚙</button>
+</header>
+
+<div class="page-content">
+
+    <!-- Add Row -->
+    <div class="add-row-with-hint">
+        <div class="add-row">
+            <input class="input" type="text" id="new-item"
+                   placeholder="Add an item..."
+                   oninput="updateCategoryHint()"
+                   autocomplete="off" />
+            <button class="btn btn-primary" onclick="addItem()">Add</button>
+        </div>
+        <div class="category-hint" id="category-hint"></div>
+    </div>
+
+    <!-- Progress -->
+    <div id="progress-area"></div>
+
+    <!-- Toolbar -->
+    <div class="grocery-toolbar">
+        <button class="btn btn-secondary" onclick="clearChecked()">✓ Clear Checked</button>
+        <button class="btn btn-secondary" onclick="clearAll()">🗑 Clear All</button>
+    </div>
+
+    <!-- List -->
+    <div id="grocery-list">
+        <div class="loading">Loading...</div>
+    </div>
+
+</div>
+
+<!-- Category Picker Modal -->
+<div id="cat-modal" class="modal-overlay" onclick="handleModalBg(event)">
+    <div class="modal" style="max-width:360px">
+        <div class="modal-header">
+            <h3>Move to Category</h3>
+            <button class="btn-icon" onclick="closeCatModal()">✕</button>
+        </div>
+        <div class="cat-picker-grid" id="cat-picker-grid"></div>
+    </div>
+</div>
+
+<!-- Theme Panel -->
+<div id="theme-overlay" class="theme-overlay" onclick="App.handleOverlayClick(event,'theme-overlay')">
+    <div class="theme-panel">
+        <div class="theme-panel-header">
+            <h3>Appearance</h3>
+            <button class="btn-icon" onclick="Theme.closePanel()">✕</button>
+        </div>
+        <div class="section-label">Color Theme</div>
+        <div id="theme-swatches" class="theme-swatches"></div>
+        <div class="section-label">Mode</div>
+        <div id="mode-buttons" class="mode-buttons"></div>
+    </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/xapi.js"></script>
+<script src="js/app.js"></script>
+<script>
+// ── Session ────────────────────────────────────────────────────
+const session = Auth.requireSession();
+if (!session) throw new Error('No session');
+Theme.renderPanel();
+
+// ── Categories ─────────────────────────────────────────────────
+const CATEGORIES = [
+    { id: 'produce',  label: 'Produce',   icon: '🥦' },
+    { id: 'meat',     label: 'Meat',      icon: '🥩' },
+    { id: 'dairy',    label: 'Dairy',     icon: '🥛' },
+    { id: 'pantry',   label: 'Pantry',    icon: '🥫' },
+    { id: 'bakery',   label: 'Bakery',    icon: '🍞' },
+    { id: 'frozen',   label: 'Frozen',    icon: '🧊' },
+    { id: 'drinks',   label: 'Drinks',    icon: '🧃' },
+    { id: 'other',    label: 'Other',     icon: '🛒' },
+];
+
+// ── Keyword → Category Map ─────────────────────────────────────
+const CATEGORY_KEYWORDS = {
+    produce: [
+        'tomato','lettuce','onion','garlic','pepper','bell pepper',
+        'broccoli','carrot','potato','sweet potato','spinach','mushroom',
+        'lemon','lime','apple','banana','avocado','celery','cucumber',
+        'zucchini','squash','cabbage','kale','arugula','cilantro','parsley',
+        'basil','mint','thyme','rosemary','ginger','corn','pea','green bean',
+        'asparagus','artichoke','beet','radish','turnip','leek','scallion',
+        'shallot','jalapeno','serrano','habanero','mango','pineapple',
+        'strawberry','blueberry','raspberry','grape','orange','peach',
+        'plum','pear','cherry','watermelon','cantaloupe','herb','vegetable',
+        'fruit','salad','arugula','romaine','iceberg',
+    ],
+    meat: [
+        'chicken','beef','pork','turkey','bacon','sausage','steak',
+        'ground beef','ground turkey','ground pork','lamb','ham','prosciutto',
+        'salami','pepperoni','chorizo','shrimp','salmon','tuna','fish',
+        'crab','lobster','scallop','cod','tilapia','halibut','mahi',
+        'anchovy','sardine','clam','oyster','mussel','duck','venison',
+        'bison','veal','rib','roast','tenderloin','breast','thigh','wing',
+        'drumstick','loin','sirloin','chuck','brisket','filet','fillet',
+    ],
+    dairy: [
+        'milk','cheese','butter','cream','yogurt','egg','sour cream',
+        'mozzarella','parmesan','cheddar','ricotta','brie','gouda',
+        'feta','goat cheese','cream cheese','half and half','heavy cream',
+        'whipping cream','cottage cheese','provolone','swiss','gruyere',
+        'mascarpone','ghee','kefir','whey','custard','pudding',
+    ],
+    pantry: [
+        'oil','olive oil','vegetable oil','coconut oil','vinegar',
+        'salt','pepper','flour','sugar','brown sugar','pasta','rice',
+        'quinoa','couscous','lentil','sauce','marinara','tomato sauce',
+        'broth','stock','chicken broth','beef broth','canned','bean',
+        'black bean','chickpea','kidney bean','breadcrumb','panko',
+        'honey','mustard','ketchup','mayo','mayonnaise','soy sauce',
+        'worcestershire','hot sauce','sriracha','spice','seasoning',
+        'cumin','paprika','oregano','cinnamon','nutmeg','turmeric',
+        'curry','chili powder','garlic powder','onion powder','bay leaf',
+        'baking powder','baking soda','yeast','cornstarch','oat','granola',
+        'cereal','cracker','chip','tortilla chip','salsa','hummus',
+        'peanut butter','almond butter','jam','jelly','syrup','maple syrup',
+        'nut','almond','walnut','pecan','cashew','pistachio','seed',
+        'sunflower','pumpkin seed','chocolate','cocoa','vanilla','extract',
+        'soup','noodle','ramen','couscous','barley','farro','bulgur',
+    ],
+    bakery: [
+        'bread','roll','bun','tortilla','pita','bagel','muffin',
+        'croissant','baguette','sourdough','rye','whole wheat bread',
+        'english muffin','flatbread','naan','focaccia','brioche',
+        'ciabatta','loaf','cake','cookie','brownie','pie crust','pastry',
+    ],
+    frozen: [
+        'frozen','ice cream','gelato','sorbet','popsicle','frozen pizza',
+        'frozen vegetable','frozen fruit','edamame','frozen meal',
+        'fish stick','waffle','frozen burrito',
+    ],
+    drinks: [
+        'juice','orange juice','apple juice','water','sparkling water',
+        'soda','cola','lemonade','wine','beer','kombucha','coffee',
+        'tea','green tea','almond milk','oat milk','soy milk',
+        'sports drink','energy drink','coconut water','cider',
+    ],
+};
+
+// ── Auto-categorize ────────────────────────────────────────────
+function categorize(text) {
+    const lower = text.toLowerCase().trim();
+    for (const [catId, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+        if (keywords.some(kw => lower.includes(kw))) return catId;
+    }
+    return 'other';
+}
+
+// ── URL ────────────────────────────────────────────────────────
+const ACTIVITY_BASE = 'https://the12414.com/activities';
+
+function groceryUrl() {
+    return session.endpoint + '/activities/profile'
+        + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/grocery-list')
+        + '&profileId=grocery-list';
+}
+
+// ── State ──────────────────────────────────────────────────────
+let groceryData = { items: [] };
+let catModalItemId = null;
+
+// ── Init ───────────────────────────────────────────────────────
+async function init() {
+    const data = await XApi.getDocument(session, groceryUrl());
+    groceryData = data || { items: [] };
+    render();
+}
+init();
+
+// ── Category Hint ──────────────────────────────────────────────
+function updateCategoryHint() {
+    const text    = document.getElementById('new-item').value.trim();
+    const hintEl  = document.getElementById('category-hint');
+    if (!text) { hintEl.innerHTML = ''; return; }
+
+    const catId   = categorize(text);
+    const cat     = CATEGORIES.find(c => c.id === catId);
+    hintEl.innerHTML = `
+        <span class="category-hint-icon">${cat.icon}</span>
+        Will be added to <strong>${cat.label}</strong>
+    `;
+}
+
+// ── Add Item ───────────────────────────────────────────────────
+async function addItem() {
+    const input = document.getElementById('new-item');
+    const text  = input.value.trim();
+    if (!text) return;
+
+    const category = categorize(text);
+    const newItem  = {
+        id:        App.randomId(),
+        text,
+        category,
+        checked:   false,
+        addedBy:   session.displayName,
+        addedAt:   new Date().toISOString(),
+    };
+
+    groceryData.items.push(newItem);
+    await save();
+    input.value = '';
+    document.getElementById('category-hint').innerHTML = '';
+    render();
+}
+
+document.getElementById('new-item').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addItem();
+});
+
+// ── Toggle Check ───────────────────────────────────────────────
+async function toggleCheck(id, checked) {
+    const item = groceryData.items.find(i => i.id === id);
+    if (!item) return;
+    item.checked = checked;
+    await save();
+    render();
+}
+
+// ── Delete ─────────────────────────────────────────────────────
+async function deleteItem(id) {
+    groceryData.items = groceryData.items.filter(i => i.id !== id);
+    await save();
+    render();
+}
+
+// ── Clear Checked ──────────────────────────────────────────────
+async function clearChecked() {
+    const checked = groceryData.items.filter(i => i.checked).length;
+    if (checked === 0) { App.showToast('Nothing checked off yet.'); return; }
+    groceryData.items = groceryData.items.filter(i => !i.checked);
+    await save();
+    render();
+    App.showToast(`Cleared ${checked} item${checked > 1 ? 's' : ''}.`);
+}
+
+// ── Clear All ──────────────────────────────────────────────────
+async function clearAll() {
+    if (groceryData.items.length === 0) { App.showToast('List is already empty.'); return; }
+    if (!confirm('Clear the entire grocery list?')) return;
+    groceryData.items = [];
+    await save();
+    render();
+    App.showToast('List cleared.');
+}
+
+// ── Category Picker ────────────────────────────────────────────
+function openCatModal(id) {
+    catModalItemId = id;
+    const item = groceryData.items.find(i => i.id === id);
+
+    document.getElementById('cat-picker-grid').innerHTML = CATEGORIES.map(c => `
+        <button class="cat-picker-btn ${item.category === c.id ? 'active' : ''}"
+                onclick="recategorize('${c.id}')">
+            ${c.icon} ${c.label}
+        </button>
+    `).join('');
+
+    document.getElementById('cat-modal').classList.add('open');
+}
+
+async function recategorize(catId) {
+    const item = groceryData.items.find(i => i.id === catModalItemId);
+    if (!item) return;
+    item.category = catId;
+    await save();
+    closeCatModal();
+    render();
+}
+
+function closeCatModal() {
+    document.getElementById('cat-modal').classList.remove('open');
+    catModalItemId = null;
+}
+
+function handleModalBg(event) {
+    if (event.target.id === 'cat-modal') closeCatModal();
+}
+
+// ── Render ─────────────────────────────────────────────────────
+function render() {
+    const container = document.getElementById('grocery-list');
+    const items     = groceryData.items;
+
+    // Progress bar
+    const total    = items.length;
+    const checked  = items.filter(i => i.checked).length;
+    const progress = total > 0 ? Math.round((checked / total) * 100) : 0;
+    const progressArea = document.getElementById('progress-area');
+
+    if (total > 0) {
+        progressArea.innerHTML = `
+            <div class="shopping-progress-label">${checked} of ${total} items</div>
+            <div class="shopping-progress">
+                <div class="shopping-progress-fill" style="width:${progress}%"></div>
+            </div>
+        `;
+    } else {
+        progressArea.innerHTML = '';
+    }
+
+    if (items.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <span class="empty-icon">🛒</span>
+                <p>Your grocery list is empty.<br>Add items above or pull from the Dinner menu!</p>
+            </div>`;
+        return;
+    }
+
+    // Group by category
+    const grouped = {};
+    CATEGORIES.forEach(c => { grouped[c.id] = []; });
+    items.forEach(item => {
+        const catId = item.category || 'other';
+        if (!grouped[catId]) grouped[catId] = [];
+        grouped[catId].push(item);
+    });
+
+    container.innerHTML = '';
+
+    CATEGORIES.forEach(cat => {
+        const catItems = grouped[cat.id];
+        if (catItems.length === 0) return;
+
+        // Sort: unchecked first, then checked
+        catItems.sort((a, b) => (a.checked ? 1 : 0) - (b.checked ? 1 : 0));
+
+        const section = document.createElement('div');
+        section.className = 'grocery-category';
+        section.innerHTML = `
+            <div class="grocery-category-header">
+                <span class="grocery-category-icon">${cat.icon}</span>
+                <span class="grocery-category-name">${cat.label}</span>
+                <span class="grocery-category-count">${catItems.length}</span>
+            </div>
+            ${catItems.map(item => `
+                <div class="grocery-item ${item.checked ? 'checked' : ''}" id="item-${item.id}">
+                    <input type="checkbox" class="grocery-checkbox"
+                           ${item.checked ? 'checked' : ''}
+                           onchange="toggleCheck('${item.id}', this.checked)" />
+                    <span class="grocery-item-text">${App.escapeHtml(item.text)}</span>
+                    <div class="grocery-item-actions">
+                        <button class="cat-badge" onclick="openCatModal('${item.id}')">
+                            ${cat.icon}
+                        </button>
+                        <button class="btn-danger" onclick="deleteItem('${item.id}')">✕</button>
+                    </div>
+                </div>
+            `).join('')}
+        `;
+        container.appendChild(section);
+    });
+}
+
+// ── Save ───────────────────────────────────────────────────────
+async function save() {
+    const response = await XApi.putDocument(session, groceryUrl(), groceryData);
+    if (!response.ok && response.status !== 204) {
+        App.showToast('Save failed. Please try again.', 'error');
+        const fresh = await XApi.getDocument(session, groceryUrl());
+        if (fresh) groceryData = fresh;
+        render();
+    }
+}
+</script>
+</body>
+</html>

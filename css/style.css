@@ -1328,3 +1328,197 @@ body {
     transition: border-color var(--transition);
 }
 .picker-search:focus { border-color: var(--primary); }
+
+/* ═══════════════════════════════════════════════════════════
+   GROCERY LIST — Additional Styles
+═══════════════════════════════════════════════════════════ */
+
+/* ── Category Sections ──────────────────────────────────── */
+.grocery-category {
+    margin-bottom: 1.25rem;
+}
+
+.grocery-category-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    margin-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.grocery-category-icon {
+    font-size: 1.1rem;
+}
+
+.grocery-category-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    flex: 1;
+}
+
+.grocery-category-count {
+    font-size: 0.72rem;
+    color: var(--text-light);
+    font-weight: 600;
+}
+
+/* ── Grocery Items ───────────────────────────────────────── */
+.grocery-item {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: var(--shadow-xs);
+    border: 1px solid var(--border-light);
+    margin-bottom: 0.45rem;
+    transition: opacity var(--transition);
+}
+
+.grocery-item.checked {
+    opacity: 0.45;
+}
+
+.grocery-item.checked .grocery-item-text {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+.grocery-checkbox {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+.grocery-item-text {
+    flex: 1;
+    font-size: 0.9rem;
+    min-width: 0;
+    word-break: break-word;
+}
+
+.grocery-item-actions {
+    display: flex;
+    gap: 0.35rem;
+    flex-shrink: 0;
+    align-items: center;
+}
+
+/* ── Category Badge ─────────────────────────────────────── */
+.cat-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--radius-full);
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+    cursor: pointer;
+    border: 1px solid var(--border);
+    transition: all var(--transition);
+    white-space: nowrap;
+    font-family: var(--font-ui);
+}
+.cat-badge:hover {
+    background: var(--primary-subtle);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+/* ── Add Row with Suggestion ─────────────────────────────── */
+.add-row-with-hint {
+    margin-bottom: 1.25rem;
+}
+
+.category-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.35rem;
+    min-height: 1.5rem;
+}
+
+.category-hint-icon { font-size: 0.9rem; }
+
+/* ── Grocery Toolbar ─────────────────────────────────────── */
+.grocery-toolbar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.grocery-toolbar .btn {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.8rem;
+    padding: 0.6rem 0.5rem;
+}
+
+/* ── Category Picker ─────────────────────────────────────── */
+.cat-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+}
+
+.cat-picker-btn {
+    padding: 0.75rem 0.5rem;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all var(--transition);
+    font-family: var(--font-ui);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+.cat-picker-btn:hover {
+    border-color: var(--primary-light);
+    color: var(--text);
+}
+.cat-picker-btn.active {
+    border-color: var(--primary);
+    background: var(--primary-subtle);
+    color: var(--primary);
+}
+
+/* ── Progress Bar ────────────────────────────────────────── */
+.shopping-progress {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-full);
+    height: 6px;
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+}
+
+.shopping-progress-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: var(--radius-full);
+    transition: width 0.4s ease;
+}
+
+.shopping-progress-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
