@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,297 +8,299 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="js/theme.js"></script>
 </head>
+
 <body>
 
-<header class="sub-header">
-    <button class="btn-back" onclick="window.location.href='home.html'">←</button>
-    <h2>Dinner Menu</h2>
-    <button class="btn btn-ghost" onclick="Theme.openPanel()">⚙</button>
-</header>
+    <header class="sub-header">
+        <button class="btn-back" onclick="window.location.href='home.html'">←</button>
+        <h2>Dinner Menu</h2>
+        <button class="btn btn-ghost" onclick="Theme.openPanel()">⚙</button>
+    </header>
 
-<div class="page-content">
+    <div class="page-content">
 
-    <!-- Main Tabs -->
-    <div class="dinner-tabs">
-        <button class="dinner-tab active" id="tab-week"     onclick="switchTab('week')">📅 This Week</button>
-        <button class="dinner-tab"        id="tab-library"  onclick="switchTab('library')">📚 Library</button>
-        <button class="dinner-tab"        id="tab-insights" onclick="switchTab('insights')">✨ Insights</button>
-        <button class="dinner-tab"        id="tab-grocery"  onclick="switchTab('grocery')">🛒 Grocery</button>
+        <!-- Main Tabs -->
+        <div class="dinner-tabs">
+            <button class="dinner-tab active" id="tab-week" onclick="switchTab('week')">📅 This Week</button>
+            <button class="dinner-tab" id="tab-library" onclick="switchTab('library')">📚 Library</button>
+            <button class="dinner-tab" id="tab-insights" onclick="switchTab('insights')">✨ Insights</button>
+            <button class="dinner-tab" id="tab-grocery" onclick="switchTab('grocery')">🛒 Grocery</button>
+        </div>
+
+        <!-- ── WEEK VIEW ── -->
+        <div id="section-week">
+            <div class="week-strip" id="week-strip"></div>
+            <div id="meal-detail-area"></div>
+        </div>
+
+        <!-- ── LIBRARY ── -->
+        <div id="section-library" style="display:none">
+            <div class="library-controls">
+                <input class="library-search" type="text" id="library-search" placeholder="Search dishes..."
+                    oninput="renderLibrary()" />
+                <button class="btn btn-primary" onclick="openAddDish()">+ Add</button>
+            </div>
+            <div class="list-tabs" style="margin-bottom:1rem">
+                <button class="list-tab active" id="lib-tab-entree" onclick="switchLibTab('entree')">Entrees</button>
+                <button class="list-tab" id="lib-tab-side" onclick="switchLibTab('side')">Sides</button>
+            </div>
+            <div id="dish-list" class="dish-list">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+
+        <!-- ── INSIGHTS ── -->
+        <div id="section-insights" style="display:none">
+            <div id="insights-content">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+
+        <!-- ── GROCERY ── -->
+        <div id="section-grocery" style="display:none">
+            <div id="grocery-content">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- ── WEEK VIEW ── -->
-    <div id="section-week">
-        <div class="week-strip" id="week-strip"></div>
-        <div id="meal-detail-area"></div>
-    </div>
-
-    <!-- ── LIBRARY ── -->
-    <div id="section-library" style="display:none">
-        <div class="library-controls">
-            <input class="library-search" type="text" id="library-search"
-                   placeholder="Search dishes..." oninput="renderLibrary()" />
-            <button class="btn btn-primary" onclick="openAddDish()">+ Add</button>
-        </div>
-        <div class="list-tabs" style="margin-bottom:1rem">
-            <button class="list-tab active" id="lib-tab-entree" onclick="switchLibTab('entree')">Entrees</button>
-            <button class="list-tab"        id="lib-tab-side"   onclick="switchLibTab('side')">Sides</button>
-        </div>
-        <div id="dish-list" class="dish-list">
-            <div class="loading">Loading...</div>
-        </div>
-    </div>
-
-    <!-- ── INSIGHTS ── -->
-    <div id="section-insights" style="display:none">
-        <div id="insights-content">
-            <div class="loading">Loading...</div>
-        </div>
-    </div>
-
-    <!-- ── GROCERY ── -->
-    <div id="section-grocery" style="display:none">
-        <div id="grocery-content">
-            <div class="loading">Loading...</div>
-        </div>
-    </div>
-
-</div>
-
-<!-- ════════════════════════════════════════════════════════
+    <!-- ════════════════════════════════════════════════════════
      MODALS
 ═════════════════════════════════════════════════════════ -->
 
-<!-- Add / Edit Dish Modal -->
-<div id="dish-modal" class="modal-overlay" onclick="handleModalBg(event,'dish-modal')">
-    <div class="modal" style="max-width:420px">
-        <div class="modal-header">
-            <h3 id="dish-modal-title">Add Dish</h3>
-            <button class="btn-icon" onclick="closeDishModal()">✕</button>
-        </div>
-        <div class="modal-scroll">
-            <input class="input" type="text" id="dish-name-input" placeholder="Dish name" style="margin-bottom:.75rem" />
-
-            <div class="section-label">Type</div>
-            <div style="display:flex;gap:.5rem;margin-bottom:.85rem">
-                <button class="mode-btn active" id="type-entree" onclick="selectDishType('entree')">🍽 Entree</button>
-                <button class="mode-btn"        id="type-side"   onclick="selectDishType('side')">🥗 Side</button>
+    <!-- Add / Edit Dish Modal -->
+    <div id="dish-modal" class="modal-overlay" onclick="handleModalBg(event,'dish-modal')">
+        <div class="modal" style="max-width:420px">
+            <div class="modal-header">
+                <h3 id="dish-modal-title">Add Dish</h3>
+                <button class="btn-icon" onclick="closeDishModal()">✕</button>
             </div>
+            <div class="modal-scroll">
+                <input class="input" type="text" id="dish-name-input" placeholder="Dish name"
+                    style="margin-bottom:.75rem" />
 
-            <div class="section-label">Tags</div>
-            <div class="tag-grid" id="tag-grid"></div>
+                <div class="section-label">Type</div>
+                <div style="display:flex;gap:.5rem;margin-bottom:.85rem">
+                    <button class="mode-btn active" id="type-entree" onclick="selectDishType('entree')">🍽
+                        Entree</button>
+                    <button class="mode-btn" id="type-side" onclick="selectDishType('side')">🥗 Side</button>
+                </div>
 
-            <div class="section-label mt-1">Ingredients (one per line)</div>
-            <textarea class="meal-notes-input" id="dish-ingredients"
-                      rows="4" placeholder="chicken&#10;marinara sauce&#10;mozzarella"></textarea>
-        </div>
-        <div class="modal-actions" style="margin-top:1rem">
-            <button class="btn btn-secondary" onclick="closeDishModal()">Cancel</button>
-            <button class="btn btn-primary"   onclick="saveDish()">Save Dish</button>
-        </div>
-    </div>
-</div>
+                <div class="section-label">Tags</div>
+                <div class="tag-grid" id="tag-grid"></div>
 
-<!-- Dish Detail / Rate Modal -->
-<div id="detail-modal" class="modal-overlay" onclick="handleModalBg(event,'detail-modal')">
-    <div class="modal" style="max-width:420px">
-        <div class="modal-header">
-            <h3 id="detail-modal-name"></h3>
-            <button class="btn-icon" onclick="closeDetailModal()">✕</button>
-        </div>
-        <div class="modal-scroll">
-            <div id="detail-meta" class="dish-meta" style="margin-bottom:1rem"></div>
-
-            <div class="section-label">Family Ratings</div>
-            <div class="member-ratings" id="member-ratings"></div>
-
-            <div class="section-label mt-2">Ingredients</div>
-            <div id="detail-ingredients" style="font-size:.85rem;color:var(--text-muted);line-height:1.7"></div>
-        </div>
-        <div class="modal-actions" style="margin-top:1rem">
-            <button class="btn btn-secondary" onclick="editDishFromDetail()">Edit</button>
-            <button class="btn btn-danger"    onclick="deleteDishFromDetail()" style="flex:0;padding:.7rem">🗑</button>
-            <button class="btn btn-primary"   onclick="closeDetailModal()">Done</button>
+                <div class="section-label mt-1">Ingredients (one per line)</div>
+                <textarea class="meal-notes-input" id="dish-ingredients" rows="4"
+                    placeholder="chicken&#10;marinara sauce&#10;mozzarella"></textarea>
+            </div>
+            <div class="modal-actions" style="margin-top:1rem">
+                <button class="btn btn-secondary" onclick="closeDishModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveDish()">Save Dish</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Dish Picker Modal (for meal planning) -->
-<div id="picker-modal" class="modal-overlay" onclick="handleModalBg(event,'picker-modal')">
-    <div class="modal" style="max-width:420px">
-        <div class="modal-header">
-            <h3 id="picker-title">Choose Entree</h3>
-            <button class="btn-icon" onclick="closePickerModal()">✕</button>
+    <!-- Dish Detail / Rate Modal -->
+    <div id="detail-modal" class="modal-overlay" onclick="handleModalBg(event,'detail-modal')">
+        <div class="modal" style="max-width:420px">
+            <div class="modal-header">
+                <h3 id="detail-modal-name"></h3>
+                <button class="btn-icon" onclick="closeDetailModal()">✕</button>
+            </div>
+            <div class="modal-scroll">
+                <div id="detail-meta" class="dish-meta" style="margin-bottom:1rem"></div>
+
+                <div class="section-label">Family Ratings</div>
+                <div class="member-ratings" id="member-ratings"></div>
+
+                <div class="section-label mt-2">Ingredients</div>
+                <div id="detail-ingredients" style="font-size:.85rem;color:var(--text-muted);line-height:1.7"></div>
+            </div>
+            <div class="modal-actions" style="margin-top:1rem">
+                <button class="btn btn-secondary" onclick="editDishFromDetail()">Edit</button>
+                <button class="btn btn-danger" onclick="deleteDishFromDetail()" style="flex:0;padding:.7rem">🗑</button>
+                <button class="btn btn-primary" onclick="closeDetailModal()">Done</button>
+            </div>
         </div>
-        <input class="picker-search" type="text" id="picker-search"
-               placeholder="Search..." oninput="renderPickerList()" />
-        <div class="picker-list" id="picker-list"></div>
-        <button class="btn btn-secondary btn-full" onclick="clearPickerSlot()">Remove</button>
     </div>
-</div>
 
-<!-- Theme Panel -->
-<div id="theme-overlay" class="theme-overlay" onclick="App.handleOverlayClick(event,'theme-overlay')">
-    <div class="theme-panel">
-        <div class="theme-panel-header">
-            <h3>Appearance</h3>
-            <button class="btn-icon" onclick="Theme.closePanel()">✕</button>
+    <!-- Dish Picker Modal (for meal planning) -->
+    <div id="picker-modal" class="modal-overlay" onclick="handleModalBg(event,'picker-modal')">
+        <div class="modal" style="max-width:420px">
+            <div class="modal-header">
+                <h3 id="picker-title">Choose Entree</h3>
+                <button class="btn-icon" onclick="closePickerModal()">✕</button>
+            </div>
+            <input class="picker-search" type="text" id="picker-search" placeholder="Search..."
+                oninput="renderPickerList()" />
+            <div class="picker-list" id="picker-list"></div>
+            <button class="btn btn-secondary btn-full" onclick="clearPickerSlot()">Remove</button>
         </div>
-        <div class="section-label">Color Theme</div>
-        <div id="theme-swatches" class="theme-swatches"></div>
-        <div class="section-label">Mode</div>
-        <div id="mode-buttons" class="mode-buttons"></div>
     </div>
-</div>
 
-<!-- ════════════════════════════════════════════════════════
+    <!-- Theme Panel -->
+    <div id="theme-overlay" class="theme-overlay" onclick="App.handleOverlayClick(event,'theme-overlay')">
+        <div class="theme-panel">
+            <div class="theme-panel-header">
+                <h3>Appearance</h3>
+                <button class="btn-icon" onclick="Theme.closePanel()">✕</button>
+            </div>
+            <div class="section-label">Color Theme</div>
+            <div id="theme-swatches" class="theme-swatches"></div>
+            <div class="section-label">Mode</div>
+            <div id="mode-buttons" class="mode-buttons"></div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
      SCRIPTS
 ═════════════════════════════════════════════════════════ -->
-<script src="js/auth.js"></script>
-<script src="js/xapi.js"></script>
-<script src="js/app.js"></script>
-<script>
-// ── Session ────────────────────────────────────────────────────
-const session = Auth.requireSession();
-if (!session) throw new Error('No session');
-Theme.renderPanel();
+    <script src="js/auth.js"></script>
+    <script src="js/xapi.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // ── Session ────────────────────────────────────────────────────
+        const session = Auth.requireSession();
+        if (!session) throw new Error('No session');
+        Theme.renderPanel();
 
-// ── Constants ──────────────────────────────────────────────────
-const ACTIVITY_BASE = 'https://the12414.com/activities';
-const MEMBERS = ['michael', 'karen', 'caleb', 'ella'];
-const MEMBER_LABELS = { michael: 'Michael', karen: 'Karen', caleb: 'Caleb', ella: 'Ella' };
+        // ── Constants ──────────────────────────────────────────────────
+        const MEMBERS = ['michael', 'karen', 'caleb', 'ella'];
+        const MEMBER_LABELS = { michael: 'Michael', karen: 'Karen', caleb: 'Caleb', ella: 'Ella' };
 
-const PRESET_TAGS = [
-    'Italian', 'Mexican', 'Asian', 'American', 'Mediterranean',
-    'Grilled', 'Baked', 'Slow Cooker', 'Quick',
-    'Comfort Food', 'Light', 'Summer', 'Soup/Stew', 'Vegetarian'
-];
+        const PRESET_TAGS = [
+            'Italian', 'Mexican', 'Asian', 'American', 'Mediterranean',
+            'Grilled', 'Baked', 'Slow Cooker', 'Quick',
+            'Comfort Food', 'Light', 'Summer', 'Soup/Stew', 'Vegetarian'
+        ];
 
-// ── State ──────────────────────────────────────────────────────
-let library      = { dishes: [] };   // meal library doc
-let dinnerCal    = { meals: [] };    // dinner calendar doc
-let currentTab   = 'week';
-let libTab       = 'entree';
+        // ── State ──────────────────────────────────────────────────────
+        let library = { dishes: [] };   // meal library doc
+        let dinnerCal = { meals: [] };    // dinner calendar doc
+        let currentTab = 'week';
+        let libTab = 'entree';
 
-// Dish modal state
-let editingDishId    = null;
-let selectedDishType = 'entree';
-let selectedTags     = [];
+        // Dish modal state
+        let editingDishId = null;
+        let selectedDishType = 'entree';
+        let selectedTags = [];
 
-// Detail modal state
-let detailDishId = null;
+        // Detail modal state
+        let detailDishId = null;
 
-// Picker modal state
-let pickerDate    = null;
-let pickerSlot    = null;   // 'entree' | 'side-0' | 'side-1' ...
-let pickerSelected = null;
+        // Picker modal state
+        let pickerDate = null;
+        let pickerSlot = null;   // 'entree' | 'side-0' | 'side-1' ...
+        let pickerSelected = null;
 
-// Week view state
-let selectedDate  = todayStr();
+        // Week view state
+        let selectedDate = todayStr();
 
-// ── URL Helpers ────────────────────────────────────────────────
-function libraryUrl()   {
-    return session.endpoint + '/activities/profile'
-        + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/meal-library')
-        + '&profileId=meal-library';
-}
-function dinnerCalUrl() {
-    return session.endpoint + '/activities/profile'
-        + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/dinner-calendar')
-        + '&profileId=dinner-calendar';
-}
-function householdTodoUrl() {
-    return session.endpoint + '/activities/profile'
-        + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/household-todo')
-        + '&profileId=household-todos';
-}
+        // ── URL Helpers ────────────────────────────────────────────────
+        function libraryUrl() {
+            return session.endpoint + '/activities/profile'
+                + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/meal-library')
+                + '&profileId=meal-library';
+        }
+        function dinnerCalUrl() {
+            return session.endpoint + '/activities/profile'
+                + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/dinner-calendar')
+                + '&profileId=dinner-calendar';
+        }
+        function householdTodoUrl() {
+            return session.endpoint + '/activities/profile'
+                + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/household-todo')
+                + '&profileId=household-todos';
+        }
 
-// ── Init ───────────────────────────────────────────────────────
-async function init() {
-    const [libData, calData] = await Promise.all([
-        XApi.getDocument(session, libraryUrl()),
-        XApi.getDocument(session, dinnerCalUrl()),
-    ]);
-    library   = libData  || { dishes: [] };
-    dinnerCal = calData  || { meals: [] };
-    renderCurrentTab();
-}
-init();
+        // ── Init ───────────────────────────────────────────────────────
+        async function init() {
+            const [libData, calData] = await Promise.all([
+                XApi.getDocument(session, libraryUrl()),
+                XApi.getDocument(session, dinnerCalUrl()),
+            ]);
+            library = libData || { dishes: [] };
+            dinnerCal = calData || { meals: [] };
+            renderCurrentTab();
+        }
+        init();
 
-// ── Tab Switching ──────────────────────────────────────────────
-function switchTab(tab) {
-    currentTab = tab;
-    ['week','library','insights','grocery'].forEach(t => {
-        document.getElementById('tab-' + t).classList.toggle('active', t === tab);
-        document.getElementById('section-' + t).style.display = t === tab ? '' : 'none';
-    });
-    renderCurrentTab();
-}
+        // ── Tab Switching ──────────────────────────────────────────────
+        function switchTab(tab) {
+            currentTab = tab;
+            ['week', 'library', 'insights', 'grocery'].forEach(t => {
+                document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+                document.getElementById('section-' + t).style.display = t === tab ? '' : 'none';
+            });
+            renderCurrentTab();
+        }
 
-function renderCurrentTab() {
-    if (currentTab === 'week')     renderWeek();
-    if (currentTab === 'library')  renderLibrary();
-    if (currentTab === 'insights') renderInsights();
-    if (currentTab === 'grocery')  renderGrocery();
-}
+        function renderCurrentTab() {
+            if (currentTab === 'week') renderWeek();
+            if (currentTab === 'library') renderLibrary();
+            if (currentTab === 'insights') renderInsights();
+            if (currentTab === 'grocery') renderGrocery();
+        }
 
-function switchLibTab(type) {
-    libTab = type;
-    document.getElementById('lib-tab-entree').classList.toggle('active', type === 'entree');
-    document.getElementById('lib-tab-side').classList.toggle('active',   type === 'side');
-    renderLibrary();
-}
+        function switchLibTab(type) {
+            libTab = type;
+            document.getElementById('lib-tab-entree').classList.toggle('active', type === 'entree');
+            document.getElementById('lib-tab-side').classList.toggle('active', type === 'side');
+            renderLibrary();
+        }
 
-// ════════════════════════════════════════════════════════════════
-// WEEK VIEW
-// ════════════════════════════════════════════════════════════════
+        // ════════════════════════════════════════════════════════════════
+        // WEEK VIEW
+        // ════════════════════════════════════════════════════════════════
 
-function renderWeek() {
-    const strip = document.getElementById('week-strip');
-    strip.innerHTML = '';
+        function renderWeek() {
+            const strip = document.getElementById('week-strip');
+            strip.innerHTML = '';
 
-    const days = getWeekDays();
-    days.forEach(dateStr => {
-        const meal    = getMealForDate(dateStr);
-        const entree  = meal ? getDish(meal.entreeId) : null;
-        const isToday = dateStr === todayStr();
-        const isSel   = dateStr === selectedDate;
-        const d       = new Date(dateStr + 'T12:00:00');
+            const days = getWeekDays();
+            days.forEach(dateStr => {
+                const meal = getMealForDate(dateStr);
+                const entree = meal ? getDish(meal.entreeId) : null;
+                const isToday = dateStr === todayStr();
+                const isSel = dateStr === selectedDate;
+                const d = new Date(dateStr + 'T12:00:00');
 
-        const div = document.createElement('div');
-        div.className = 'week-day'
-            + (isToday ? ' today' : '')
-            + (meal    ? ' has-meal' : '')
-            + (isSel   ? ' selected' : '');
+                const div = document.createElement('div');
+                div.className = 'week-day'
+                    + (isToday ? ' today' : '')
+                    + (meal ? ' has-meal' : '')
+                    + (isSel ? ' selected' : '');
 
-        div.innerHTML = `
-            <div class="week-day-label">${d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase()}</div>
+                div.innerHTML = `
+            <div class="week-day-label">${d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}</div>
             <div class="week-day-num">${d.getDate()}</div>
             ${entree
-                ? `<div class="week-day-meal">${App.escapeHtml(entree.name)}</div>`
-                : `<div class="week-day-dot" style="opacity:0.2"></div>`}
+                        ? `<div class="week-day-meal">${App.escapeHtml(entree.name)}</div>`
+                        : `<div class="week-day-dot" style="opacity:0.2"></div>`}
         `;
-        div.onclick = () => { selectedDate = dateStr; renderWeek(); };
-        strip.appendChild(div);
-    });
+                div.onclick = () => { selectedDate = dateStr; renderWeek(); };
+                strip.appendChild(div);
+            });
 
-    renderMealDetail();
-}
+            renderMealDetail();
+        }
 
-function renderMealDetail() {
-    const area = document.getElementById('meal-detail-area');
-    const d    = new Date(selectedDate + 'T12:00:00');
-    const meal = getMealForDate(selectedDate);
+        function renderMealDetail() {
+            const area = document.getElementById('meal-detail-area');
+            const d = new Date(selectedDate + 'T12:00:00');
+            const meal = getMealForDate(selectedDate);
 
-    const entree = meal ? getDish(meal.entreeId) : null;
-    const sides  = meal ? (meal.sideIds || []).map(id => getDish(id)).filter(Boolean) : [];
+            const entree = meal ? getDish(meal.entreeId) : null;
+            const sides = meal ? (meal.sideIds || []).map(id => getDish(id)).filter(Boolean) : [];
 
-    const dateLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            const dateLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    // Build sides slots — show filled sides + up to 1 empty slot (max 4 sides)
-    const sideSlots = [...sides];
-    if (sideSlots.length < 4) sideSlots.push(null); // one empty slot
+            // Build sides slots — show filled sides + up to 1 empty slot (max 4 sides)
+            const sideSlots = [...sides];
+            if (sideSlots.length < 4) sideSlots.push(null); // one empty slot
 
-    area.innerHTML = `
+            area.innerHTML = `
         <div class="meal-detail-card">
             <div class="meal-detail-date">${dateLabel}</div>
 
@@ -339,161 +342,161 @@ function renderMealDetail() {
             </div>
         </div>
     `;
-}
+        }
 
-async function saveMeal() {
-    const notes   = document.getElementById('meal-notes')?.value.trim() || '';
-    const existing = getMealForDate(selectedDate);
-    const id       = existing ? existing.id : App.randomId();
+        async function saveMeal() {
+            const notes = document.getElementById('meal-notes')?.value.trim() || '';
+            const existing = getMealForDate(selectedDate);
+            const id = existing ? existing.id : App.randomId();
 
-    // Rebuild meal from current UI state
-    const meal = existing
-        ? { ...existing, notes }
-        : { id, date: selectedDate, planned: true, entreeId: null, sideIds: [], notes };
+            // Rebuild meal from current UI state
+            const meal = existing
+                ? { ...existing, notes }
+                : { id, date: selectedDate, planned: true, entreeId: null, sideIds: [], notes };
 
-    // Update in calendar
-    dinnerCal.meals = dinnerCal.meals.filter(m => m.date !== selectedDate);
-    if (meal.entreeId || (meal.sideIds && meal.sideIds.length > 0)) {
-        dinnerCal.meals.push(meal);
-    }
+            // Update in calendar
+            dinnerCal.meals = dinnerCal.meals.filter(m => m.date !== selectedDate);
+            if (meal.entreeId || (meal.sideIds && meal.sideIds.length > 0)) {
+                dinnerCal.meals.push(meal);
+            }
 
-    await saveDinnerCal();
-    renderWeek();
-    App.showToast('Meal saved!');
+            await saveDinnerCal();
+            renderWeek();
+            App.showToast('Meal saved!');
 
-    if (meal.entreeId) {
-        const dish = getDish(meal.entreeId);
-        if (dish) XApi.sendStatement(session, 'planned', 'planned',
-            ACTIVITY_BASE + '/dish/' + meal.entreeId, dish.name);
-    }
-}
+            if (meal.entreeId) {
+                const dish = getDish(meal.entreeId);
+                if (dish) XApi.sendStatement(session, 'planned', 'planned',
+                    ACTIVITY_BASE + '/dish/' + meal.entreeId, dish.name);
+            }
+        }
 
-async function clearMeal() {
-    dinnerCal.meals = dinnerCal.meals.filter(m => m.date !== selectedDate);
-    await saveDinnerCal();
-    renderWeek();
-    App.showToast('Meal cleared.');
-}
+        async function clearMeal() {
+            dinnerCal.meals = dinnerCal.meals.filter(m => m.date !== selectedDate);
+            await saveDinnerCal();
+            renderWeek();
+            App.showToast('Meal cleared.');
+        }
 
-// ════════════════════════════════════════════════════════════════
-// PICKER MODAL
-// ════════════════════════════════════════════════════════════════
+        // ════════════════════════════════════════════════════════════════
+        // PICKER MODAL
+        // ════════════════════════════════════════════════════════════════
 
-function openPicker(slotType, slotIndex) {
-    pickerSlot = { type: slotType, index: slotIndex };
-    const isEntree = slotType === 'entree';
-    document.getElementById('picker-title').textContent = isEntree ? 'Choose Entree' : 'Choose Side';
-    document.getElementById('picker-search').value = '';
+        function openPicker(slotType, slotIndex) {
+            pickerSlot = { type: slotType, index: slotIndex };
+            const isEntree = slotType === 'entree';
+            document.getElementById('picker-title').textContent = isEntree ? 'Choose Entree' : 'Choose Side';
+            document.getElementById('picker-search').value = '';
 
-    const meal = getMealForDate(selectedDate);
-    if (isEntree) {
-        pickerSelected = meal ? meal.entreeId : null;
-    } else {
-        pickerSelected = meal && meal.sideIds ? (meal.sideIds[slotIndex] || null) : null;
-    }
+            const meal = getMealForDate(selectedDate);
+            if (isEntree) {
+                pickerSelected = meal ? meal.entreeId : null;
+            } else {
+                pickerSelected = meal && meal.sideIds ? (meal.sideIds[slotIndex] || null) : null;
+            }
 
-    renderPickerList();
-    document.getElementById('picker-modal').classList.add('open');
-}
+            renderPickerList();
+            document.getElementById('picker-modal').classList.add('open');
+        }
 
-function renderPickerList() {
-    const isEntree = pickerSlot.type === 'entree';
-    const query    = document.getElementById('picker-search').value.toLowerCase();
-    const dishes   = library.dishes
-        .filter(d => d.type === (isEntree ? 'entree' : 'side'))
-        .filter(d => !query || d.name.toLowerCase().includes(query))
-        .sort((a, b) => a.name.localeCompare(b.name));
+        function renderPickerList() {
+            const isEntree = pickerSlot.type === 'entree';
+            const query = document.getElementById('picker-search').value.toLowerCase();
+            const dishes = library.dishes
+                .filter(d => d.type === (isEntree ? 'entree' : 'side'))
+                .filter(d => !query || d.name.toLowerCase().includes(query))
+                .sort((a, b) => a.name.localeCompare(b.name));
 
-    const list = document.getElementById('picker-list');
-    if (dishes.length === 0) {
-        list.innerHTML = `<div class="empty-state" style="padding:1.5rem 0">
+            const list = document.getElementById('picker-list');
+            if (dishes.length === 0) {
+                list.innerHTML = `<div class="empty-state" style="padding:1.5rem 0">
             <p>No ${isEntree ? 'entrees' : 'sides'} in library yet.<br>Add dishes in the Library tab.</p>
         </div>`;
-        return;
-    }
+                return;
+            }
 
-    list.innerHTML = dishes.map(d => {
-        const avg   = avgRating(d);
-        const stars = avg ? '★'.repeat(Math.round(avg)) : '';
-        return `
+            list.innerHTML = dishes.map(d => {
+                const avg = avgRating(d);
+                const stars = avg ? '★'.repeat(Math.round(avg)) : '';
+                return `
             <div class="picker-item ${d.id === pickerSelected ? 'selected' : ''}"
                  onclick="selectPickerItem('${d.id}')">
                 <span>${App.escapeHtml(d.name)}</span>
                 <span class="picker-item-stars">${stars}</span>
             </div>
         `;
-    }).join('');
-}
+            }).join('');
+        }
 
-async function selectPickerItem(dishId) {
-    let meal = getMealForDate(selectedDate);
-    if (!meal) {
-        meal = { id: App.randomId(), date: selectedDate, planned: true, entreeId: null, sideIds: [], notes: '' };
-        dinnerCal.meals.push(meal);
-    }
+        async function selectPickerItem(dishId) {
+            let meal = getMealForDate(selectedDate);
+            if (!meal) {
+                meal = { id: App.randomId(), date: selectedDate, planned: true, entreeId: null, sideIds: [], notes: '' };
+                dinnerCal.meals.push(meal);
+            }
 
-    if (pickerSlot.type === 'entree') {
-        meal.entreeId = dishId;
-    } else {
-        if (!meal.sideIds) meal.sideIds = [];
-        meal.sideIds[pickerSlot.index] = dishId;
-        meal.sideIds = meal.sideIds.filter(Boolean);
-    }
+            if (pickerSlot.type === 'entree') {
+                meal.entreeId = dishId;
+            } else {
+                if (!meal.sideIds) meal.sideIds = [];
+                meal.sideIds[pickerSlot.index] = dishId;
+                meal.sideIds = meal.sideIds.filter(Boolean);
+            }
 
-    pickerSelected = dishId;
-    await saveDinnerCal();
-    closePickerModal();
-    renderWeek();
-}
+            pickerSelected = dishId;
+            await saveDinnerCal();
+            closePickerModal();
+            renderWeek();
+        }
 
-async function clearPickerSlot() {
-    const meal = getMealForDate(selectedDate);
-    if (!meal) { closePickerModal(); return; }
+        async function clearPickerSlot() {
+            const meal = getMealForDate(selectedDate);
+            if (!meal) { closePickerModal(); return; }
 
-    if (pickerSlot.type === 'entree') {
-        meal.entreeId = null;
-    } else {
-        meal.sideIds.splice(pickerSlot.index, 1);
-    }
+            if (pickerSlot.type === 'entree') {
+                meal.entreeId = null;
+            } else {
+                meal.sideIds.splice(pickerSlot.index, 1);
+            }
 
-    await saveDinnerCal();
-    closePickerModal();
-    renderWeek();
-}
+            await saveDinnerCal();
+            closePickerModal();
+            renderWeek();
+        }
 
-function closePickerModal() {
-    document.getElementById('picker-modal').classList.remove('open');
-}
+        function closePickerModal() {
+            document.getElementById('picker-modal').classList.remove('open');
+        }
 
-// ════════════════════════════════════════════════════════════════
-// LIBRARY
-// ════════════════════════════════════════════════════════════════
+        // ════════════════════════════════════════════════════════════════
+        // LIBRARY
+        // ════════════════════════════════════════════════════════════════
 
-function renderLibrary() {
-    const query   = (document.getElementById('library-search')?.value || '').toLowerCase();
-    const dishes  = library.dishes
-        .filter(d => d.type === libTab)
-        .filter(d => !query || d.name.toLowerCase().includes(query))
-        .sort((a, b) => a.name.localeCompare(b.name));
+        function renderLibrary() {
+            const query = (document.getElementById('library-search')?.value || '').toLowerCase();
+            const dishes = library.dishes
+                .filter(d => d.type === libTab)
+                .filter(d => !query || d.name.toLowerCase().includes(query))
+                .sort((a, b) => a.name.localeCompare(b.name));
 
-    const list = document.getElementById('dish-list');
-    if (dishes.length === 0) {
-        list.innerHTML = `
+            const list = document.getElementById('dish-list');
+            if (dishes.length === 0) {
+                list.innerHTML = `
             <div class="empty-state">
                 <span class="empty-icon">${libTab === 'entree' ? '🍽' : '🥗'}</span>
                 <p>No ${libTab}s yet. Tap + Add to get started!</p>
             </div>`;
-        return;
-    }
+                return;
+            }
 
-    list.innerHTML = dishes.map(d => {
-        const avg        = avgRating(d);
-        const myRating   = d.ratings?.[session.displayName.toLowerCase()] || 0;
-        const lastMade   = lastMadeDate(d.id);
-        const filledStars = avg ? Math.round(avg) : 0;
-        const starDisplay = '★'.repeat(filledStars) + '☆'.repeat(5 - filledStars);
+            list.innerHTML = dishes.map(d => {
+                const avg = avgRating(d);
+                const myRating = d.ratings?.[session.displayName.toLowerCase()] || 0;
+                const lastMade = lastMadeDate(d.id);
+                const filledStars = avg ? Math.round(avg) : 0;
+                const starDisplay = '★'.repeat(filledStars) + '☆'.repeat(5 - filledStars);
 
-        return `
+                return `
             <div class="dish-card" onclick="openDetailModal('${d.id}')">
                 <div class="dish-card-top">
                     <div class="dish-info">
@@ -514,125 +517,125 @@ function renderLibrary() {
                 </div>
             </div>
         `;
-    }).join('');
-}
+            }).join('');
+        }
 
-// ── Add / Edit Dish Modal ──────────────────────────────────────
+        // ── Add / Edit Dish Modal ──────────────────────────────────────
 
-function openAddDish(prefillType) {
-    editingDishId    = null;
-    selectedDishType = prefillType || 'entree';
-    selectedTags     = [];
-    document.getElementById('dish-modal-title').textContent = 'Add Dish';
-    document.getElementById('dish-name-input').value        = '';
-    document.getElementById('dish-ingredients').value       = '';
-    renderDishModalControls();
-    document.getElementById('dish-modal').classList.add('open');
-    setTimeout(() => document.getElementById('dish-name-input').focus(), 100);
-}
+        function openAddDish(prefillType) {
+            editingDishId = null;
+            selectedDishType = prefillType || 'entree';
+            selectedTags = [];
+            document.getElementById('dish-modal-title').textContent = 'Add Dish';
+            document.getElementById('dish-name-input').value = '';
+            document.getElementById('dish-ingredients').value = '';
+            renderDishModalControls();
+            document.getElementById('dish-modal').classList.add('open');
+            setTimeout(() => document.getElementById('dish-name-input').focus(), 100);
+        }
 
-function openEditDish(id) {
-    const dish = getDish(id);
-    if (!dish) return;
-    editingDishId    = id;
-    selectedDishType = dish.type;
-    selectedTags     = [...(dish.tags || [])];
-    document.getElementById('dish-modal-title').textContent = 'Edit Dish';
-    document.getElementById('dish-name-input').value        = dish.name;
-    document.getElementById('dish-ingredients').value       = (dish.ingredients || []).join('\n');
-    renderDishModalControls();
-    document.getElementById('dish-modal').classList.add('open');
-}
+        function openEditDish(id) {
+            const dish = getDish(id);
+            if (!dish) return;
+            editingDishId = id;
+            selectedDishType = dish.type;
+            selectedTags = [...(dish.tags || [])];
+            document.getElementById('dish-modal-title').textContent = 'Edit Dish';
+            document.getElementById('dish-name-input').value = dish.name;
+            document.getElementById('dish-ingredients').value = (dish.ingredients || []).join('\n');
+            renderDishModalControls();
+            document.getElementById('dish-modal').classList.add('open');
+        }
 
-function renderDishModalControls() {
-    document.getElementById('type-entree').classList.toggle('active', selectedDishType === 'entree');
-    document.getElementById('type-side').classList.toggle('active',   selectedDishType === 'side');
+        function renderDishModalControls() {
+            document.getElementById('type-entree').classList.toggle('active', selectedDishType === 'entree');
+            document.getElementById('type-side').classList.toggle('active', selectedDishType === 'side');
 
-    document.getElementById('tag-grid').innerHTML = PRESET_TAGS.map(t => `
+            document.getElementById('tag-grid').innerHTML = PRESET_TAGS.map(t => `
         <button class="tag-option ${selectedTags.includes(t) ? 'selected' : ''}"
                 onclick="toggleTag('${t}')">
             ${t}
         </button>
     `).join('');
-}
+        }
 
-function selectDishType(type) {
-    selectedDishType = type;
-    renderDishModalControls();
-}
+        function selectDishType(type) {
+            selectedDishType = type;
+            renderDishModalControls();
+        }
 
-function toggleTag(tag) {
-    if (selectedTags.includes(tag)) {
-        selectedTags = selectedTags.filter(t => t !== tag);
-    } else {
-        selectedTags.push(tag);
-    }
-    renderDishModalControls();
-}
+        function toggleTag(tag) {
+            if (selectedTags.includes(tag)) {
+                selectedTags = selectedTags.filter(t => t !== tag);
+            } else {
+                selectedTags.push(tag);
+            }
+            renderDishModalControls();
+        }
 
-async function saveDish() {
-    const name = document.getElementById('dish-name-input').value.trim();
-    if (!name) { App.showToast('Please enter a dish name.', 'error'); return; }
+        async function saveDish() {
+            const name = document.getElementById('dish-name-input').value.trim();
+            if (!name) { App.showToast('Please enter a dish name.', 'error'); return; }
 
-    const ingredients = document.getElementById('dish-ingredients').value
-        .split('\n').map(s => s.trim()).filter(Boolean);
+            const ingredients = document.getElementById('dish-ingredients').value
+                .split('\n').map(s => s.trim()).filter(Boolean);
 
-    if (editingDishId) {
-        const dish    = getDish(editingDishId);
-        dish.name     = name;
-        dish.type     = selectedDishType;
-        dish.tags     = selectedTags;
-        dish.ingredients = ingredients;
-    } else {
-        library.dishes.push({
-            id:          App.randomId(),
-            name,
-            type:        selectedDishType,
-            tags:        selectedTags,
-            ingredients,
-            ratings:     {},
-            addedAt:     new Date().toISOString(),
-        });
-    }
+            if (editingDishId) {
+                const dish = getDish(editingDishId);
+                dish.name = name;
+                dish.type = selectedDishType;
+                dish.tags = selectedTags;
+                dish.ingredients = ingredients;
+            } else {
+                library.dishes.push({
+                    id: App.randomId(),
+                    name,
+                    type: selectedDishType,
+                    tags: selectedTags,
+                    ingredients,
+                    ratings: {},
+                    addedAt: new Date().toISOString(),
+                });
+            }
 
-    await saveLibrary();
-    closeDishModal();
-    renderLibrary();
-    App.showToast(editingDishId ? 'Dish updated!' : 'Dish added!');
-}
+            await saveLibrary();
+            closeDishModal();
+            renderLibrary();
+            App.showToast(editingDishId ? 'Dish updated!' : 'Dish added!');
+        }
 
-function closeDishModal() {
-    document.getElementById('dish-modal').classList.remove('open');
-    editingDishId = null;
-}
+        function closeDishModal() {
+            document.getElementById('dish-modal').classList.remove('open');
+            editingDishId = null;
+        }
 
-// ── Dish Detail / Rate Modal ───────────────────────────────────
+        // ── Dish Detail / Rate Modal ───────────────────────────────────
 
-function openDetailModal(id) {
-    detailDishId = id;
-    const dish = getDish(id);
-    if (!dish) return;
+        function openDetailModal(id) {
+            detailDishId = id;
+            const dish = getDish(id);
+            if (!dish) return;
 
-    document.getElementById('detail-modal-name').textContent = dish.name;
+            document.getElementById('detail-modal-name').textContent = dish.name;
 
-    const lastMade = lastMadeDate(id);
-    const avg      = avgRating(dish);
-    document.getElementById('detail-meta').innerHTML = `
+            const lastMade = lastMadeDate(id);
+            const avg = avgRating(dish);
+            document.getElementById('detail-meta').innerHTML = `
         <span>${dish.type === 'entree' ? '🍽 Entree' : '🥗 Side'}</span>
         ${lastMade ? `<span>· Last made ${App.formatDate(lastMade)}</span>` : '<span>· Never made</span>'}
         ${avg ? `<span>· Avg ★ ${avg.toFixed(1)}</span>` : ''}
         ${dish.tags?.length ? `<span>· ${dish.tags.join(', ')}</span>` : ''}
     `;
 
-    // Member ratings
-    const ratingsEl = document.getElementById('member-ratings');
-    ratingsEl.innerHTML = MEMBERS.map(member => {
-        const current = dish.ratings?.[member] || 0;
-        return `
+            // Member ratings
+            const ratingsEl = document.getElementById('member-ratings');
+            ratingsEl.innerHTML = MEMBERS.map(member => {
+                const current = dish.ratings?.[member] || 0;
+                return `
             <div class="member-rating-row">
                 <div class="member-rating-name">${MEMBER_LABELS[member]}</div>
                 <div class="star-rating" id="stars-${member}">
-                    ${[1,2,3,4,5].map(n => `
+                    ${[1, 2, 3, 4, 5].map(n => `
                         <span class="star ${n <= current ? 'filled' : ''}"
                               data-member="${member}" data-val="${n}"
                               onclick="rateDish('${id}', '${member}', ${n})"
@@ -642,160 +645,160 @@ function openDetailModal(id) {
                 </div>
             </div>
         `;
-    }).join('');
+            }).join('');
 
-    // Ingredients
-    const ingEl = document.getElementById('detail-ingredients');
-    ingEl.textContent = dish.ingredients?.length
-        ? dish.ingredients.join(', ')
-        : 'No ingredients listed.';
+            // Ingredients
+            const ingEl = document.getElementById('detail-ingredients');
+            ingEl.textContent = dish.ingredients?.length
+                ? dish.ingredients.join(', ')
+                : 'No ingredients listed.';
 
-    document.getElementById('detail-modal').classList.add('open');
-}
+            document.getElementById('detail-modal').classList.add('open');
+        }
 
-function renderStars(dishId, member) {
-    const dish    = getDish(dishId);
-    const current = dish?.ratings?.[member] || 0;
-    const container = document.getElementById('stars-' + member);
-    if (!container) return;
-    container.querySelectorAll('.star').forEach(s => {
-        s.classList.toggle('filled', parseInt(s.dataset.val) <= current);
-    });
-}
+        function renderStars(dishId, member) {
+            const dish = getDish(dishId);
+            const current = dish?.ratings?.[member] || 0;
+            const container = document.getElementById('stars-' + member);
+            if (!container) return;
+            container.querySelectorAll('.star').forEach(s => {
+                s.classList.toggle('filled', parseInt(s.dataset.val) <= current);
+            });
+        }
 
-function hoverStars(member, val) {
-    const container = document.getElementById('stars-' + member);
-    if (!container) return;
-    container.querySelectorAll('.star').forEach(s => {
-        s.classList.toggle('filled', parseInt(s.dataset.val) <= val);
-    });
-}
+        function hoverStars(member, val) {
+            const container = document.getElementById('stars-' + member);
+            if (!container) return;
+            container.querySelectorAll('.star').forEach(s => {
+                s.classList.toggle('filled', parseInt(s.dataset.val) <= val);
+            });
+        }
 
-async function rateDish(dishId, member, rating) {
-    const dish = getDish(dishId);
-    if (!dish) return;
+        async function rateDish(dishId, member, rating) {
+            const dish = getDish(dishId);
+            if (!dish) return;
 
-    if (!dish.ratings) dish.ratings = {};
-    dish.ratings[member] = rating;
+            if (!dish.ratings) dish.ratings = {};
+            dish.ratings[member] = rating;
 
-    await saveLibrary();
-    renderStars(dishId, member);
-    renderLibrary();
-    App.showToast(`${MEMBER_LABELS[member]}: ${rating} ⭐`);
+            await saveLibrary();
+            renderStars(dishId, member);
+            renderLibrary();
+            App.showToast(`${MEMBER_LABELS[member]}: ${rating} ⭐`);
 
-    XApi.sendStatement(session, 'rated', 'rated',
-        ACTIVITY_BASE + '/dish/' + dishId, dish.name);
-}
+            XApi.sendStatement(session, 'rated', 'rated',
+                ACTIVITY_BASE + '/dish/' + dishId, dish.name);
+        }
 
-function closeDetailModal() {
-    document.getElementById('detail-modal').classList.remove('open');
-    detailDishId = null;
-}
+        function closeDetailModal() {
+            document.getElementById('detail-modal').classList.remove('open');
+            detailDishId = null;
+        }
 
-function editDishFromDetail() {
-    closeDetailModal();
-    openEditDish(detailDishId);
-}
+        function editDishFromDetail() {
+            closeDetailModal();
+            openEditDish(detailDishId);
+        }
 
-async function deleteDishFromDetail() {
-    if (!detailDishId) return;
-    const dish = getDish(detailDishId);
-    if (!dish) return;
-    if (!confirm(`Delete "${dish.name}"? This can't be undone.`)) return;
+        async function deleteDishFromDetail() {
+            if (!detailDishId) return;
+            const dish = getDish(detailDishId);
+            if (!dish) return;
+            if (!confirm(`Delete "${dish.name}"? This can't be undone.`)) return;
 
-    library.dishes = library.dishes.filter(d => d.id !== detailDishId);
-    await saveLibrary();
-    closeDetailModal();
-    renderLibrary();
-    App.showToast('Dish deleted.');
-}
+            library.dishes = library.dishes.filter(d => d.id !== detailDishId);
+            await saveLibrary();
+            closeDetailModal();
+            renderLibrary();
+            App.showToast('Dish deleted.');
+        }
 
-function rateFromMeal(dishId) {
-    openDetailModal(dishId);
-}
+        function rateFromMeal(dishId) {
+            openDetailModal(dishId);
+        }
 
-// ════════════════════════════════════════════════════════════════
-// INSIGHTS
-// ════════════════════════════════════════════════════════════════
+        // ════════════════════════════════════════════════════════════════
+        // INSIGHTS
+        // ════════════════════════════════════════════════════════════════
 
-function renderInsights() {
-    const container = document.getElementById('insights-content');
-    const entrees   = library.dishes.filter(d => d.type === 'entree');
-    const sides     = library.dishes.filter(d => d.type === 'side');
+        function renderInsights() {
+            const container = document.getElementById('insights-content');
+            const entrees = library.dishes.filter(d => d.type === 'entree');
+            const sides = library.dishes.filter(d => d.type === 'side');
 
-    if (entrees.length === 0) {
-        container.innerHTML = `
+            if (entrees.length === 0) {
+                container.innerHTML = `
             <div class="empty-state">
                 <span class="empty-icon">✨</span>
                 <p>Add some dishes to your library to see insights!</p>
             </div>`;
-        return;
-    }
+                return;
+            }
 
-    // ── Suggest Tonight ──────────────────────────────────────
-    const scored = entrees
-        .filter(d => avgRating(d) >= 3)
-        .map(d => {
-            const last  = lastMadeDate(d.id);
-            const days  = last
-                ? Math.floor((Date.now() - new Date(last)) / 86400000)
-                : 999;
-            const score = (avgRating(d) * 2) + (days / 7);
-            return { ...d, score, days };
-        })
-        .sort((a, b) => b.score - a.score);
+            // ── Suggest Tonight ──────────────────────────────────────
+            const scored = entrees
+                .filter(d => avgRating(d) >= 3)
+                .map(d => {
+                    const last = lastMadeDate(d.id);
+                    const days = last
+                        ? Math.floor((Date.now() - new Date(last)) / 86400000)
+                        : 999;
+                    const score = (avgRating(d) * 2) + (days / 7);
+                    return { ...d, score, days };
+                })
+                .sort((a, b) => b.score - a.score);
 
-    const suggestions = shuffle(scored.slice(0, 10)).slice(0, 4);
+            const suggestions = shuffle(scored.slice(0, 10)).slice(0, 4);
 
-    // ── Overdue Favorites ────────────────────────────────────
-    const overdue = entrees
-        .filter(d => {
-            const avg  = avgRating(d);
-            const last = lastMadeDate(d.id);
-            const days = last
-                ? Math.floor((Date.now() - new Date(last)) / 86400000)
-                : 999;
-            return avg >= 4 && days > 30;
-        })
-        .sort((a, b) => lastMadeDate(a.id) - lastMadeDate(b.id))
-        .slice(0, 5);
+            // ── Overdue Favorites ────────────────────────────────────
+            const overdue = entrees
+                .filter(d => {
+                    const avg = avgRating(d);
+                    const last = lastMadeDate(d.id);
+                    const days = last
+                        ? Math.floor((Date.now() - new Date(last)) / 86400000)
+                        : 999;
+                    return avg >= 4 && days > 30;
+                })
+                .sort((a, b) => lastMadeDate(a.id) - lastMadeDate(b.id))
+                .slice(0, 5);
 
-    // ── Most Made This Month ─────────────────────────────────
-    const monthAgo = new Date();
-    monthAgo.setDate(monthAgo.getDate() - 30);
-    const monthAgoStr = monthAgo.toISOString().split('T')[0];
+            // ── Most Made This Month ─────────────────────────────────
+            const monthAgo = new Date();
+            monthAgo.setDate(monthAgo.getDate() - 30);
+            const monthAgoStr = monthAgo.toISOString().split('T')[0];
 
-    const madeThisMonth = {};
-    dinnerCal.meals
-        .filter(m => m.date >= monthAgoStr)
-        .forEach(m => {
-            if (m.entreeId) madeThisMonth[m.entreeId] = (madeThisMonth[m.entreeId] || 0) + 1;
-        });
+            const madeThisMonth = {};
+            dinnerCal.meals
+                .filter(m => m.date >= monthAgoStr)
+                .forEach(m => {
+                    if (m.entreeId) madeThisMonth[m.entreeId] = (madeThisMonth[m.entreeId] || 0) + 1;
+                });
 
-    const topMade = Object.entries(madeThisMonth)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([id, count]) => ({ dish: getDish(id), count }))
-        .filter(x => x.dish);
+            const topMade = Object.entries(madeThisMonth)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(([id, count]) => ({ dish: getDish(id), count }))
+                .filter(x => x.dish);
 
-    // ── Forgotten Sides ──────────────────────────────────────
-    const forgottenSides = sides
-        .filter(d => {
-            const avg  = avgRating(d);
-            const last = lastMadeDate(d.id);
-            const days = last
-                ? Math.floor((Date.now() - new Date(last)) / 86400000)
-                : 999;
-            return avg >= 3 && days > 21;
-        })
-        .sort((a, b) => {
-            const da = lastMadeDate(a.id) || '0';
-            const db = lastMadeDate(b.id) || '0';
-            return da.localeCompare(db);
-        })
-        .slice(0, 4);
+            // ── Forgotten Sides ──────────────────────────────────────
+            const forgottenSides = sides
+                .filter(d => {
+                    const avg = avgRating(d);
+                    const last = lastMadeDate(d.id);
+                    const days = last
+                        ? Math.floor((Date.now() - new Date(last)) / 86400000)
+                        : 999;
+                    return avg >= 3 && days > 21;
+                })
+                .sort((a, b) => {
+                    const da = lastMadeDate(a.id) || '0';
+                    const db = lastMadeDate(b.id) || '0';
+                    return da.localeCompare(db);
+                })
+                .slice(0, 4);
 
-    container.innerHTML = `
+            container.innerHTML = `
 
         <div class="insight-section">
             <div class="insight-section-title">
@@ -821,16 +824,16 @@ function renderInsights() {
             <div class="insight-section-title">⏰ Overdue Favorites</div>
             <div class="insight-cards">
                 ${overdue.map(d => {
-                    const days = Math.floor((Date.now() - new Date(lastMadeDate(d.id))) / 86400000);
-                    return `
+                const days = Math.floor((Date.now() - new Date(lastMadeDate(d.id))) / 86400000);
+                return `
                         <div class="insight-card" onclick="openDetailModal('${d.id}')">
                             <div class="insight-card-body">
                                 <div class="insight-card-name">${App.escapeHtml(d.name)}</div>
-                                <div class="insight-card-meta">Avg ★ ${avgRating(d).toFixed(1)} · ${d.tags?.slice(0,2).join(', ') || ''}</div>
+                                <div class="insight-card-meta">Avg ★ ${avgRating(d).toFixed(1)} · ${d.tags?.slice(0, 2).join(', ') || ''}</div>
                             </div>
                             <div class="insight-card-stat">${days}d ago</div>
                         </div>`;
-                }).join('')}
+            }).join('')}
             </div>
         </div>` : ''}
 
@@ -838,7 +841,7 @@ function renderInsights() {
         <div class="insight-section">
             <div class="insight-section-title">🔁 Most Made This Month</div>
             <div class="insight-cards">
-                ${topMade.map(({dish, count}) => `
+                ${topMade.map(({ dish, count }) => `
                     <div class="insight-card" onclick="openDetailModal('${dish.id}')">
                         <div class="insight-card-body">
                             <div class="insight-card-name">${App.escapeHtml(dish.name)}</div>
@@ -855,11 +858,11 @@ function renderInsights() {
             <div class="insight-section-title">🥗 Forgotten Sides</div>
             <div class="insight-cards">
                 ${forgottenSides.map(d => {
-                    const last = lastMadeDate(d.id);
-                    const days = last
-                        ? Math.floor((Date.now() - new Date(last)) / 86400000)
-                        : null;
-                    return `
+                const last = lastMadeDate(d.id);
+                const days = last
+                    ? Math.floor((Date.now() - new Date(last)) / 86400000)
+                    : null;
+                return `
                         <div class="insight-card" onclick="openDetailModal('${d.id}')">
                             <div class="insight-card-body">
                                 <div class="insight-card-name">${App.escapeHtml(d.name)}</div>
@@ -867,71 +870,71 @@ function renderInsights() {
                             </div>
                             <div class="insight-card-stat">${days ? days + 'd ago' : 'Never'}</div>
                         </div>`;
-                }).join('')}
+            }).join('')}
             </div>
         </div>` : ''}
 
     `;
-}
+        }
 
-// ════════════════════════════════════════════════════════════════
-// GROCERY
-// ════════════════════════════════════════════════════════════════
+        // ════════════════════════════════════════════════════════════════
+        // GROCERY
+        // ════════════════════════════════════════════════════════════════
 
-function renderGrocery() {
-    const container = document.getElementById('grocery-content');
-    const today     = todayStr();
+        function renderGrocery() {
+            const container = document.getElementById('grocery-content');
+            const today = todayStr();
 
-    // Collect upcoming planned meals
-    const upcomingMeals = dinnerCal.meals
-        .filter(m => m.date >= today)
-        .sort((a, b) => a.date.localeCompare(b.date))
-        .slice(0, 7);
+            // Collect upcoming planned meals
+            const upcomingMeals = dinnerCal.meals
+                .filter(m => m.date >= today)
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .slice(0, 7);
 
-    if (upcomingMeals.length === 0) {
-        container.innerHTML = `
+            if (upcomingMeals.length === 0) {
+                container.innerHTML = `
             <div class="empty-state">
                 <span class="empty-icon">🛒</span>
                 <p>Plan some meals this week and their ingredients will appear here.</p>
             </div>`;
-        return;
-    }
+                return;
+            }
 
-    // Collect all ingredients from planned dishes
-    const allIngredients = new Map();
-    upcomingMeals.forEach(meal => {
-        const dishIds = [meal.entreeId, ...(meal.sideIds || [])].filter(Boolean);
-        dishIds.forEach(dishId => {
-            const dish = getDish(dishId);
-            if (!dish || !dish.ingredients) return;
-            dish.ingredients.forEach(ing => {
-                const key = ing.toLowerCase().trim();
-                if (!allIngredients.has(key)) {
-                    allIngredients.set(key, { label: ing, selected: true, dishes: [] });
-                }
-                allIngredients.get(key).dishes.push(dish.name);
+            // Collect all ingredients from planned dishes
+            const allIngredients = new Map();
+            upcomingMeals.forEach(meal => {
+                const dishIds = [meal.entreeId, ...(meal.sideIds || [])].filter(Boolean);
+                dishIds.forEach(dishId => {
+                    const dish = getDish(dishId);
+                    if (!dish || !dish.ingredients) return;
+                    dish.ingredients.forEach(ing => {
+                        const key = ing.toLowerCase().trim();
+                        if (!allIngredients.has(key)) {
+                            allIngredients.set(key, { label: ing, selected: true, dishes: [] });
+                        }
+                        allIngredients.get(key).dishes.push(dish.name);
+                    });
+                });
             });
-        });
-    });
 
-    if (allIngredients.size === 0) {
-        container.innerHTML = `
+            if (allIngredients.size === 0) {
+                container.innerHTML = `
             <div class="empty-state">
                 <span class="empty-icon">🛒</span>
                 <p>Your upcoming dishes have no ingredients listed yet. Add them in the Library.</p>
             </div>`;
-        return;
-    }
+                return;
+            }
 
-    const ingredientList = [...allIngredients.entries()];
+            const ingredientList = [...allIngredients.entries()];
 
-    container.innerHTML = `
+            container.innerHTML = `
         <div class="grocery-section">
             <h3>Upcoming Meal Ingredients</h3>
             <p>From your next ${upcomingMeals.length} planned dinner${upcomingMeals.length > 1 ? 's' : ''}. Tap to deselect items you already have.</p>
             <div class="ingredient-chips" id="ingredient-chips">
                 ${ingredientList.map(([key, item]) => `
-                    <div class="ingredient-chip selected" id="chip-${key.replace(/\s/g,'_')}"
+                    <div class="ingredient-chip selected" id="chip-${key.replace(/\s/g, '_')}"
                          onclick="toggleChip(this)">
                         ${App.escapeHtml(item.label)}
                     </div>
@@ -947,9 +950,9 @@ function renderGrocery() {
             <p>What's coming up</p>
             ${upcomingMeals.map(meal => {
                 const entree = getDish(meal.entreeId);
-                const sides  = (meal.sideIds || []).map(id => getDish(id)).filter(Boolean);
-                const d      = new Date(meal.date + 'T12:00:00');
-                const label  = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                const sides = (meal.sideIds || []).map(id => getDish(id)).filter(Boolean);
+                const d = new Date(meal.date + 'T12:00:00');
+                const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
                 return `
                     <div class="cal-event-item" style="margin-bottom:.5rem">
                         <div class="cal-event-dot"></div>
@@ -965,119 +968,120 @@ function renderGrocery() {
             }).join('')}
         </div>
     `;
-}
-
-function toggleChip(el) {
-    el.classList.toggle('selected');
-}
-
-async function addToShoppingList() {
-    const chips = document.querySelectorAll('.ingredient-chip.selected');
-    if (chips.length === 0) {
-        App.showToast('No ingredients selected.', 'error');
-        return;
-    }
-
-    // Load existing household todo list
-    const url  = householdTodoUrl();
-    const data = await XApi.getDocument(session, url);
-    const items = data ? data.items : [];
-
-    const existing = new Set(items.map(i => i.text.toLowerCase().trim()));
-    let added = 0;
-
-    chips.forEach(chip => {
-        const text = chip.textContent.trim();
-        if (!existing.has(text.toLowerCase())) {
-            items.push({
-                id:                App.randomId(),
-                text,
-                completed:         false,
-                createdBy:         session.displayName,
-                createdAt:         new Date().toISOString(),
-                sharedToHousehold: true,
-            });
-            added++;
         }
-    });
 
-    if (added === 0) {
-        App.showToast('All items already in shopping list!');
-        return;
-    }
+        function toggleChip(el) {
+            el.classList.toggle('selected');
+        }
 
-    await XApi.putDocument(session, url, { items });
-    App.showToast(`${added} item${added > 1 ? 's' : ''} added to household list!`);
-}
+        async function addToShoppingList() {
+            const chips = document.querySelectorAll('.ingredient-chip.selected');
+            if (chips.length === 0) {
+                App.showToast('No ingredients selected.', 'error');
+                return;
+            }
 
-// ════════════════════════════════════════════════════════════════
-// DATA HELPERS
-// ════════════════════════════════════════════════════════════════
+            // Load existing household todo list
+            const url = householdTodoUrl();
+            const data = await XApi.getDocument(session, url);
+            const items = data ? data.items : [];
 
-function getDish(id) {
-    return library.dishes.find(d => d.id === id) || null;
-}
+            const existing = new Set(items.map(i => i.text.toLowerCase().trim()));
+            let added = 0;
 
-function getMealForDate(dateStr) {
-    return dinnerCal.meals.find(m => m.date === dateStr) || null;
-}
+            chips.forEach(chip => {
+                const text = chip.textContent.trim();
+                if (!existing.has(text.toLowerCase())) {
+                    items.push({
+                        id: App.randomId(),
+                        text,
+                        completed: false,
+                        createdBy: session.displayName,
+                        createdAt: new Date().toISOString(),
+                        sharedToHousehold: true,
+                    });
+                    added++;
+                }
+            });
 
-function avgRating(dish) {
-    if (!dish.ratings) return 0;
-    const vals = Object.values(dish.ratings).filter(v => v > 0);
-    if (!vals.length) return 0;
-    return vals.reduce((a, b) => a + b, 0) / vals.length;
-}
+            if (added === 0) {
+                App.showToast('All items already in shopping list!');
+                return;
+            }
 
-function lastMadeDate(dishId) {
-    const meals = dinnerCal.meals
-        .filter(m => m.entreeId === dishId || (m.sideIds || []).includes(dishId))
-        .map(m => m.date)
-        .sort();
-    return meals.length ? meals[meals.length - 1] : null;
-}
+            await XApi.putDocument(session, url, { items });
+            App.showToast(`${added} item${added > 1 ? 's' : ''} added to household list!`);
+        }
 
-async function saveLibrary() {
-    await XApi.putDocument(session, libraryUrl(), library);
-}
+        // ════════════════════════════════════════════════════════════════
+        // DATA HELPERS
+        // ════════════════════════════════════════════════════════════════
 
-async function saveDinnerCal() {
-    await XApi.putDocument(session, dinnerCalUrl(), dinnerCal);
-}
+        function getDish(id) {
+            return library.dishes.find(d => d.id === id) || null;
+        }
 
-function getWeekDays() {
-    const today  = new Date();
-    today.setHours(0, 0, 0, 0);
-    const days   = [];
-    // Show 3 days back, today, 3 days forward
-    for (let i = -3; i <= 3; i++) {
-        const d = new Date(today);
-        d.setDate(d.getDate() + i);
-        days.push(d.toISOString().split('T')[0]);
-    }
-    return days;
-}
+        function getMealForDate(dateStr) {
+            return dinnerCal.meals.find(m => m.date === dateStr) || null;
+        }
 
-function todayStr() {
-    return new Date().toISOString().split('T')[0];
-}
+        function avgRating(dish) {
+            if (!dish.ratings) return 0;
+            const vals = Object.values(dish.ratings).filter(v => v > 0);
+            if (!vals.length) return 0;
+            return vals.reduce((a, b) => a + b, 0) / vals.length;
+        }
 
-function shuffle(arr) {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-}
+        function lastMadeDate(dishId) {
+            const meals = dinnerCal.meals
+                .filter(m => m.entreeId === dishId || (m.sideIds || []).includes(dishId))
+                .map(m => m.date)
+                .sort();
+            return meals.length ? meals[meals.length - 1] : null;
+        }
 
-function handleModalBg(event, id) {
-    if (event.target.id === id) {
-        if (id === 'dish-modal')   closeDishModal();
-        if (id === 'detail-modal') closeDetailModal();
-        if (id === 'picker-modal') closePickerModal();
-    }
-}
-</script>
+        async function saveLibrary() {
+            await XApi.putDocument(session, libraryUrl(), library);
+        }
+
+        async function saveDinnerCal() {
+            await XApi.putDocument(session, dinnerCalUrl(), dinnerCal);
+        }
+
+        function getWeekDays() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const days = [];
+            // Show 3 days back, today, 3 days forward
+            for (let i = -3; i <= 3; i++) {
+                const d = new Date(today);
+                d.setDate(d.getDate() + i);
+                days.push(d.toISOString().split('T')[0]);
+            }
+            return days;
+        }
+
+        function todayStr() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function shuffle(arr) {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function handleModalBg(event, id) {
+            if (event.target.id === id) {
+                if (id === 'dish-modal') closeDishModal();
+                if (id === 'detail-modal') closeDetailModal();
+                if (id === 'picker-modal') closePickerModal();
+            }
+        }
+    </script>
 </body>
+
 </html>
