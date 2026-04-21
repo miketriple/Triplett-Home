@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The 12414 — To-Do</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/theme.js"></script>
+</head>
+<body>
+
+<header class="sub-header">
+    <button class="btn-back" onclick="window.location.href='home.html'">←</button>
+    <h2>To-Do Lists</h2>
+    <button class="btn btn-ghost" onclick="Theme.openPanel()">⚙</button>
+</header>
+
+<div class="page-content">
+
+    <div class="list-tabs">
+        <button class="list-tab active" id="tab-personal"   onclick="switchTab('personal')">My List</button>
+        <button class="list-tab"        id="tab-household"  onclick="switchTab('household')">Household</button>
+    </div>
+
+    <div class="add-row">
+        <input class="input" type="text" id="new-item" placeholder="Add a task..." />
+        <button class="btn btn-primary" onclick="addTodo()">Add</button>
+    </div>
+
+    <div id="todo-items" class="todo-items">
+        <div class="loading">Loading...</div>
+    </div>
+
+</div>
+
+<!-- Theme Panel -->
+<div id="theme-overlay" class="theme-overlay" onclick="App.handleOverlayClick(event, 'theme-overlay')">
+    <div class="theme-panel">
+        <div class="theme-panel-header">
+            <h3>Appearance</h3>
+            <button class="btn-icon" onclick="Theme.closePanel()">✕</button>
+        </div>
+        <div class="section-label">Color Theme</div>
+        <div id="theme-swatches" class="theme-swatches"></div>
+        <div class="section-label">Mode</div>
+        <div id="mode-buttons" class="mode-buttons"></div>
+    </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/xapi.js"></script>
+<script src="js/app.js"></script>
+<script>
+    const session = Auth.requireSession();
+    let currentTab = 'personal';
+
+    if (session) {
+        Theme.renderPanel();
+
+        // Support direct link to household tab
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('list') === 'household') {
+            switchTab('household');
+        } else {
+            loadTodos();
+        }
+    }
+
+    // ── Tab Switching ──────────────────────────────────────────
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.getElementById('tab-personal').classList.toggle('active',   tab === 'personal');
+        document.getElementById('tab-household').classList.toggle('active',  tab === 'household');
+        document.getElementById('new-item').placeholder =
+            tab === 'personal' ? 'Add a personal task...' : 'Add a household task...';
+        loadTodos();
+    }
+
+    function currentUrl() {
+        return currentTab === 'personal'
+            ? XApi.personalTodoUrl(session)
+            : XApi.householdTodoUrl(session);
+    }
+
+    // ── Load & Render ──────────────────────────────────────────
+
+    async function loadTodos() {
+        document.getElementById('todo-items').innerHTML = '<div class="loading">Loading...</div>';
+        const data = await XApi.getDocument(session, currentUrl());
+        renderTodos(data ? data.items : []);
+    }
+
+    function renderTodos(items) {
+        const container = document.getElementById('todo-items');
+
+        if (items.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <span class="empty-icon">${currentTab === 'personal' ? '📝' : '🏠'}</span>
+                    <p>No tasks yet — add one above!</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = '';
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'todo-item' + (item.completed ? ' done-item' : '');
+            div.innerHTML = `
+                <input type="checkbox" class="todo-checkbox"
+                    ${item.completed ? 'checked' : ''}
+                    onchange="toggleTodo('${item.id}', this.checked)" />
+                <div class="todo-body">
+                    <div class="todo-text ${item.completed ? 'done' : ''}">
+                        ${App.escapeHtml(item.text)}
+                    </div>
+                    <div class="todo-meta">
+                        <span>${App.escapeHtml(item.createdBy)}</span>
+                        ${item.sharedBy ? `<span>· shared by ${App.escapeHtml(item.sharedBy)}</span>` : ''}
+                        <span>· ${App.formatDate(item.createdAt)}</span>
+                        ${item.sharedToHousehold ? '<span class="badge badge-shared">shared</span>' : ''}
+                    </div>
+                </div>
+                <div class="todo-actions">
+                    ${currentTab === 'personal' && !item.sharedToHousehold
+                        ? `<button class="btn-share" onclick="shareToHousehold('${item.id}')">Share</button>`
+                        : ''}
+                    <button class="btn-danger" onclick="deleteTodo('${item.id}')">✕</button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // ── Add ────────────────────────────────────────────────────
+
+    async function addTodo() {
+        const input = document.getElementById('new-item');
+        const text  = input.value.trim();
+        if (!text) return;
+
+        const url  = currentUrl();
+        const data = await XApi.getDocument(session, url);
+        const items = data ? data.items : [];
+
+        const newItem = {
+            id:                App.randomId(),
+            text,
+            completed:         false,
+            createdBy:         session.displayName,
+            createdAt:         new Date().toISOString(),
+            sharedToHousehold: currentTab === 'household',
+        };
+
+        items.push(newItem);
+        const response = await XApi.putDocument(session, url, { items });
+
+        if (response.ok || response.status === 204) {
+            input.value = '';
+            renderTodos(items);
+            XApi.sendStatement(session, 'added', 'added',
+                ACTIVITY_BASE + '/todo/' + newItem.id, text);
+        } else {
+            App.showToast('Could not save. Please try again.', 'error');
+        }
+    }
+
+    document.getElementById('new-item').addEventListener('keydown', e => {
+        if (e.key === 'Enter') addTodo();
+    });
+
+    // ── Toggle Complete ────────────────────────────────────────
+
+    async function toggleTodo(id, completed) {
+        const url  = currentUrl();
+        const data = await XApi.getDocument(session, url);
+        if (!data) return;
+
+        const item = data.items.find(i => i.id === id);
+        if (!item) return;
+        item.completed = completed;
+
+        await XApi.putDocument(session, url, data);
+        renderTodos(data.items);
+
+        XApi.sendStatement(session,
+            completed ? 'completed' : 'uncompleted',
+            completed ? 'completed' : 'uncompleted',
+            ACTIVITY_BASE + '/todo/' + id, item.text);
+    }
+
+    // ── Delete ─────────────────────────────────────────────────
+
+    async function deleteTodo(id) {
+        const url  = currentUrl();
+        const data = await XApi.getDocument(session, url);
+        if (!data) return;
+
+        const item = data.items.find(i => i.id === id);
+        data.items = data.items.filter(i => i.id !== id);
+
+        await XApi.putDocument(session, url, data);
+        renderTodos(data.items);
+
+        if (item) {
+            XApi.sendStatement(session, 'deleted', 'deleted',
+                ACTIVITY_BASE + '/todo/' + id, item.text);
+        }
+    }
+
+    // ── Share to Household ─────────────────────────────────────
+
+    async function shareToHousehold(id) {
+        // 1. Mark item as shared on personal list
+        const personalUrl  = XApi.personalTodoUrl(session);
+        const personalData = await XApi.getDocument(session, personalUrl);
+        if (!personalData) return;
+
+        const item = personalData.items.find(i => i.id === id);
+        if (!item) return;
+
+        item.sharedToHousehold = true;
+        await XApi.putDocument(session, personalUrl, personalData);
+
+        // 2. Add copy to household list
+        const householdUrl  = XApi.householdTodoUrl(session);
+        const householdData = await XApi.getDocument(session, householdUrl);
+        const householdItems = householdData ? householdData.items : [];
+
+        householdItems.push({
+            ...item,
+            sharedBy: session.displayName,
+            sharedAt: new Date().toISOString(),
+        });
+
+        await XApi.putDocument(session, householdUrl, { items: householdItems });
+
+        renderTodos(personalData.items);
+        App.showToast('Added to household list!');
+
+        XApi.sendStatement(session, 'shared', 'shared',
+            ACTIVITY_BASE + '/todo/' + id, item.text);
+    }
+</script>
+</body>
+</html>
