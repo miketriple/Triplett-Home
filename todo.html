@@ -17,24 +17,51 @@
 
 <div class="page-content">
 
-    <div class="list-tabs">
-        <button class="list-tab active" id="tab-personal"   onclick="switchTab('personal')">My List</button>
-        <button class="list-tab"        id="tab-household"  onclick="switchTab('household')">Household</button>
+    <!-- Tab + Filter Toggle Row -->
+    <div class="todo-controls">
+        <div class="list-tabs" style="margin-bottom:0;flex:1">
+            <button class="list-tab active" id="tab-personal"  onclick="switchTab('personal')">My List</button>
+            <button class="list-tab"        id="tab-household" onclick="switchTab('household')">Household</button>
+        </div>
+        <button class="filter-toggle-btn" id="filter-toggle" onclick="toggleFilterBar()">⚙ Sort</button>
     </div>
 
-    <div class="add-row">
-        <input class="input" type="text" id="new-item" placeholder="Add a task..." />
-        <button class="btn btn-primary" onclick="addTodo()">Add</button>
+    <!-- Filter / Sort Bar -->
+    <div class="filter-bar" id="filter-bar">
+        <div class="filter-row">
+            <span class="filter-label">Show</span>
+            <div class="filter-options">
+                <button class="filter-option active" id="filter-all"       onclick="setFilter('all')">All</button>
+                <button class="filter-option"        id="filter-active"    onclick="setFilter('active')">Active</button>
+                <button class="filter-option"        id="filter-completed" onclick="setFilter('completed')">Done</button>
+            </div>
+        </div>
+        <div class="filter-row">
+            <span class="filter-label">Sort</span>
+            <div class="filter-options">
+                <button class="filter-option active" id="sort-manual" onclick="setSort('manual')">Manual</button>
+                <button class="filter-option"        id="sort-due"    onclick="setSort('due')">Due Date</button>
+                <button class="filter-option"        id="sort-added"  onclick="setSort('added')">Date Added</button>
+            </div>
+        </div>
     </div>
 
-    <div id="todo-items" class="todo-items">
-        <div class="loading">Loading...</div>
+    <!-- Add Row -->
+    <div class="add-row" style="margin-bottom:0.75rem">
+        <input class="input" type="text" id="new-item" placeholder="Add a task..." autocomplete="off" />
+        <button class="btn btn-primary" onclick="addItem()">Add</button>
     </div>
+
+    <!-- List -->
+    <div id="todo-list"><div class="loading">Loading...</div></div>
+
+    <!-- Footer -->
+    <div class="todo-list-footer" id="list-footer"></div>
 
 </div>
 
 <!-- Theme Panel -->
-<div id="theme-overlay" class="theme-overlay" onclick="App.handleOverlayClick(event, 'theme-overlay')">
+<div id="theme-overlay" class="theme-overlay" onclick="App.handleOverlayClick(event,'theme-overlay')">
     <div class="theme-panel">
         <div class="theme-panel-header">
             <h3>Appearance</h3>
@@ -51,197 +78,466 @@
 <script src="js/xapi.js"></script>
 <script src="js/app.js"></script>
 <script>
-    const session = Auth.requireSession();
-    let currentTab = 'personal';
+const session = Auth.requireSession();
+if (!session) throw new Error('No session');
+Theme.renderPanel();
 
-    if (session) {
-        Theme.renderPanel();
+const ACTIVITY_BASE = 'https://the12414.com/activities';
 
-        // Support direct link to household tab
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('list') === 'household') {
-            switchTab('household');
-        } else {
-            loadTodos();
+let currentTab    = 'personal';
+let filterMode    = 'all';
+let sortMode      = 'manual';
+let expandedId    = null;
+let editingId     = null;
+let personalData  = { items: [] };
+let householdData = { items: [] };
+
+// ── URLs ───────────────────────────────────────────────────────
+function personalUrl() {
+    const agent = encodeURIComponent(JSON.stringify({ mbox: session.mbox }));
+    return session.endpoint + '/activities/state'
+        + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/personal-todo')
+        + '&agent=' + agent
+        + '&stateId=personal-todos';
+}
+
+function householdUrl() {
+    return session.endpoint + '/activities/profile'
+        + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/household-todo')
+        + '&profileId=household-todos';
+}
+
+function currentUrl() {
+    return currentTab === 'personal' ? personalUrl() : householdUrl();
+}
+
+function currentData() {
+    return currentTab === 'personal' ? personalData : householdData;
+}
+
+// ── Init ───────────────────────────────────────────────────────
+async function init() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('list') === 'household') switchTabSilent('household');
+
+    const [pd, hd] = await Promise.all([
+        XApi.getDocument(session, personalUrl()),
+        XApi.getDocument(session, householdUrl()),
+    ]);
+    personalData  = pd || { items: [] };
+    householdData = hd || { items: [] };
+    render();
+}
+init();
+
+// ── Tab Switching ──────────────────────────────────────────────
+function switchTabSilent(tab) {
+    currentTab = tab;
+    document.getElementById('tab-personal').classList.toggle('active',  tab === 'personal');
+    document.getElementById('tab-household').classList.toggle('active', tab === 'household');
+    document.getElementById('new-item').placeholder =
+        tab === 'personal' ? 'Add a personal task...' : 'Add a household task...';
+}
+
+function switchTab(tab) {
+    expandedId = null;
+    editingId  = null;
+    switchTabSilent(tab);
+    render();
+}
+
+// ── Filter / Sort ──────────────────────────────────────────────
+function toggleFilterBar() {
+    const bar = document.getElementById('filter-bar');
+    const btn = document.getElementById('filter-toggle');
+    bar.classList.toggle('open');
+    btn.classList.toggle('active', bar.classList.contains('open'));
+}
+
+function setFilter(mode) {
+    filterMode = mode;
+    ['all','active','completed'].forEach(m =>
+        document.getElementById('filter-' + m).classList.toggle('active', m === mode));
+    render();
+}
+
+function setSort(mode) {
+    sortMode = mode;
+    ['manual','due','added'].forEach(m =>
+        document.getElementById('sort-' + m).classList.toggle('active', m === mode));
+    render();
+}
+
+// ── Add Item ───────────────────────────────────────────────────
+async function addItem() {
+    const input = document.getElementById('new-item');
+    const text  = input.value.trim();
+    if (!text) return;
+
+    const data = currentData();
+    const newItem = {
+        id:                App.randomId(),
+        text,
+        completed:         false,
+        note:              '',
+        dueDate:           null,
+        createdBy:         session.displayName,
+        createdAt:         new Date().toISOString(),
+        sharedToHousehold: currentTab === 'household',
+        source:            'personal',
+        order:             data.items.length,
+    };
+
+    data.items.push(newItem);
+    await save();
+    input.value = '';
+    render();
+
+    XApi.sendStatement(session, 'added', 'added',
+        ACTIVITY_BASE + '/todo/' + newItem.id, text);
+}
+
+document.getElementById('new-item').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addItem();
+});
+
+// ── Toggle Complete ────────────────────────────────────────────
+async function toggleComplete(id, checked) {
+    const item = findItem(id);
+    if (!item) return;
+    item.completed  = checked;
+    item.completedAt = checked ? new Date().toISOString() : null;
+    await save();
+    render();
+    XApi.sendStatement(session,
+        checked ? 'completed' : 'uncompleted',
+        checked ? 'completed' : 'uncompleted',
+        ACTIVITY_BASE + '/todo/' + id, item.text);
+}
+
+// ── Inline Text Edit ───────────────────────────────────────────
+function startEdit(id) {
+    if (editingId === id) return;
+    editingId = id;
+    render();
+    setTimeout(() => {
+        const input = document.getElementById('inline-edit-' + id);
+        if (input) { input.focus(); input.select(); }
+    }, 50);
+}
+
+async function commitEdit(id) {
+    const input = document.getElementById('inline-edit-' + id);
+    if (!input) return;
+    const newText = input.value.trim();
+    if (newText) {
+        const item = findItem(id);
+        if (item && item.text !== newText) {
+            item.text = newText;
+            await save();
         }
     }
+    editingId = null;
+    render();
+}
 
-    // ── Tab Switching ──────────────────────────────────────────
+function handleEditKey(e, id) {
+    if (e.key === 'Enter')  { e.preventDefault(); commitEdit(id); }
+    if (e.key === 'Escape') { editingId = null; render(); }
+}
 
-    function switchTab(tab) {
-        currentTab = tab;
-        document.getElementById('tab-personal').classList.toggle('active',   tab === 'personal');
-        document.getElementById('tab-household').classList.toggle('active',  tab === 'household');
-        document.getElementById('new-item').placeholder =
-            tab === 'personal' ? 'Add a personal task...' : 'Add a household task...';
-        loadTodos();
-    }
+// ── Expand / Collapse ──────────────────────────────────────────
+function toggleExpand(id) {
+    if (editingId === id) return;
+    expandedId = expandedId === id ? null : id;
+    render();
+}
 
-    function currentUrl() {
-        return currentTab === 'personal'
-            ? XApi.personalTodoUrl(session)
-            : XApi.householdTodoUrl(session);
-    }
+// ── Save Expanded Fields ───────────────────────────────────────
+async function saveExpanded(id) {
+    const item  = findItem(id);
+    if (!item) return;
+    const noteEl = document.getElementById('exp-note-' + id);
+    const dueEl  = document.getElementById('exp-due-'  + id);
+    if (noteEl) item.note    = noteEl.value.trim();
+    if (dueEl)  item.dueDate = dueEl.value  || null;
+    await save();
+    render();
+    App.showToast('Saved!');
+}
 
-    // ── Load & Render ──────────────────────────────────────────
+// ── Reorder ────────────────────────────────────────────────────
+async function moveItem(id, direction) {
+    const data  = currentData();
+    const items = getSortedItems();
+    const idx   = items.findIndex(i => i.id === id);
+    const newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= items.length) return;
 
-    async function loadTodos() {
-        document.getElementById('todo-items').innerHTML = '<div class="loading">Loading...</div>';
-        const data = await XApi.getDocument(session, currentUrl());
-        renderTodos(data ? data.items : []);
-    }
+    const temp          = items[idx].order;
+    items[idx].order    = items[newIdx].order;
+    items[newIdx].order = temp;
 
-    function renderTodos(items) {
-        const container = document.getElementById('todo-items');
-
-        if (items.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <span class="empty-icon">${currentTab === 'personal' ? '📝' : '🏠'}</span>
-                    <p>No tasks yet — add one above!</p>
-                </div>`;
-            return;
-        }
-
-        container.innerHTML = '';
-        items.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'todo-item' + (item.completed ? ' done-item' : '');
-            div.innerHTML = `
-                <input type="checkbox" class="todo-checkbox"
-                    ${item.completed ? 'checked' : ''}
-                    onchange="toggleTodo('${item.id}', this.checked)" />
-                <div class="todo-body">
-                    <div class="todo-text ${item.completed ? 'done' : ''}">
-                        ${App.escapeHtml(item.text)}
-                    </div>
-                    <div class="todo-meta">
-                        <span>${App.escapeHtml(item.createdBy)}</span>
-                        ${item.sharedBy ? `<span>· shared by ${App.escapeHtml(item.sharedBy)}</span>` : ''}
-                        <span>· ${App.formatDate(item.createdAt)}</span>
-                        ${item.sharedToHousehold ? '<span class="badge badge-shared">shared</span>' : ''}
-                    </div>
-                </div>
-                <div class="todo-actions">
-                    ${currentTab === 'personal' && !item.sharedToHousehold
-                        ? `<button class="btn-share" onclick="shareToHousehold('${item.id}')">Share</button>`
-                        : ''}
-                    <button class="btn-danger" onclick="deleteTodo('${item.id}')">✕</button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    // ── Add ────────────────────────────────────────────────────
-
-    async function addTodo() {
-        const input = document.getElementById('new-item');
-        const text  = input.value.trim();
-        if (!text) return;
-
-        const url  = currentUrl();
-        const data = await XApi.getDocument(session, url);
-        const items = data ? data.items : [];
-
-        const newItem = {
-            id:                App.randomId(),
-            text,
-            completed:         false,
-            createdBy:         session.displayName,
-            createdAt:         new Date().toISOString(),
-            sharedToHousehold: currentTab === 'household',
-        };
-
-        items.push(newItem);
-        const response = await XApi.putDocument(session, url, { items });
-
-        if (response.ok || response.status === 204) {
-            input.value = '';
-            renderTodos(items);
-            XApi.sendStatement(session, 'added', 'added',
-                ACTIVITY_BASE + '/todo/' + newItem.id, text);
-        } else {
-            App.showToast('Could not save. Please try again.', 'error');
-        }
-    }
-
-    document.getElementById('new-item').addEventListener('keydown', e => {
-        if (e.key === 'Enter') addTodo();
+    items.forEach(item => {
+        const src = data.items.find(i => i.id === item.id);
+        if (src) src.order = item.order;
     });
 
-    // ── Toggle Complete ────────────────────────────────────────
+    await save();
+    render();
+}
 
-    async function toggleTodo(id, completed) {
-        const url  = currentUrl();
-        const data = await XApi.getDocument(session, url);
-        if (!data) return;
+// ── Share / Unshare ────────────────────────────────────────────
+async function shareItem(id) {
+    const item = personalData.items.find(i => i.id === id);
+    if (!item) return;
+    item.sharedToHousehold = true;
+    await savePersonal();
 
-        const item = data.items.find(i => i.id === id);
-        if (!item) return;
-        item.completed = completed;
-
-        await XApi.putDocument(session, url, data);
-        renderTodos(data.items);
-
-        XApi.sendStatement(session,
-            completed ? 'completed' : 'uncompleted',
-            completed ? 'completed' : 'uncompleted',
-            ACTIVITY_BASE + '/todo/' + id, item.text);
-    }
-
-    // ── Delete ─────────────────────────────────────────────────
-
-    async function deleteTodo(id) {
-        const url  = currentUrl();
-        const data = await XApi.getDocument(session, url);
-        if (!data) return;
-
-        const item = data.items.find(i => i.id === id);
-        data.items = data.items.filter(i => i.id !== id);
-
-        await XApi.putDocument(session, url, data);
-        renderTodos(data.items);
-
-        if (item) {
-            XApi.sendStatement(session, 'deleted', 'deleted',
-                ACTIVITY_BASE + '/todo/' + id, item.text);
-        }
-    }
-
-    // ── Share to Household ─────────────────────────────────────
-
-    async function shareToHousehold(id) {
-        // 1. Mark item as shared on personal list
-        const personalUrl  = XApi.personalTodoUrl(session);
-        const personalData = await XApi.getDocument(session, personalUrl);
-        if (!personalData) return;
-
-        const item = personalData.items.find(i => i.id === id);
-        if (!item) return;
-
-        item.sharedToHousehold = true;
-        await XApi.putDocument(session, personalUrl, personalData);
-
-        // 2. Add copy to household list
-        const householdUrl  = XApi.householdTodoUrl(session);
-        const householdData = await XApi.getDocument(session, householdUrl);
-        const householdItems = householdData ? householdData.items : [];
-
-        householdItems.push({
+    if (!householdData.items.find(i => i.id === id)) {
+        householdData.items.push({
             ...item,
             sharedBy: session.displayName,
             sharedAt: new Date().toISOString(),
         });
-
-        await XApi.putDocument(session, householdUrl, { items: householdItems });
-
-        renderTodos(personalData.items);
-        App.showToast('Added to household list!');
-
-        XApi.sendStatement(session, 'shared', 'shared',
-            ACTIVITY_BASE + '/todo/' + id, item.text);
+        await saveHousehold();
     }
+    render();
+    App.showToast('Added to household list!');
+    XApi.sendStatement(session, 'shared', 'shared',
+        ACTIVITY_BASE + '/todo/' + id, item.text);
+}
+
+async function unshareItem(id) {
+    const item = personalData.items.find(i => i.id === id);
+    if (item) item.sharedToHousehold = false;
+    await savePersonal();
+
+    householdData.items = householdData.items.filter(i => i.id !== id);
+    await saveHousehold();
+    render();
+    App.showToast('Removed from household list.');
+}
+
+// ── Delete ─────────────────────────────────────────────────────
+async function deleteItem(id) {
+    const item = findItem(id);
+    const data = currentData();
+    data.items = data.items.filter(i => i.id !== id);
+
+    if (currentTab === 'personal' && item?.sharedToHousehold) {
+        householdData.items = householdData.items.filter(i => i.id !== id);
+        await saveHousehold();
+    }
+
+    await save();
+    if (expandedId === id) expandedId = null;
+    render();
+
+    if (item) XApi.sendStatement(session, 'deleted', 'deleted',
+        ACTIVITY_BASE + '/todo/' + id, item.text);
+}
+
+// ── Clear Completed ────────────────────────────────────────────
+async function clearCompleted() {
+    const data  = currentData();
+    const count = data.items.filter(i => i.completed).length;
+    if (count === 0) { App.showToast('Nothing completed yet.'); return; }
+    data.items = data.items.filter(i => !i.completed);
+    await save();
+    render();
+    App.showToast(`Cleared ${count} completed item${count > 1 ? 's' : ''}.`);
+}
+
+// ── Render ─────────────────────────────────────────────────────
+function render() {
+    const container = document.getElementById('todo-list');
+    const footer    = document.getElementById('list-footer');
+    const items     = getFilteredItems();
+    const today     = new Date().toISOString().split('T')[0];
+    const isManual  = sortMode === 'manual';
+
+    // Footer — clear completed button
+    const doneCount = currentData().items.filter(i => i.completed).length;
+    footer.innerHTML = doneCount > 0
+        ? `<button class="btn btn-secondary" onclick="clearCompleted()">
+               ✓ Clear ${doneCount} Completed
+           </button>`
+        : '';
+
+    if (items.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <span class="empty-icon">${currentTab === 'personal' ? '📝' : '🏠'}</span>
+                <p>${filterMode !== 'all'
+                    ? 'No items match this filter.'
+                    : 'No tasks yet — add one above!'}</p>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = '';
+
+    items.forEach((item, idx) => {
+        const isOverdue  = item.dueDate && item.dueDate < today && !item.completed;
+        const isExpanded = expandedId === item.id;
+        const isEditing  = editingId  === item.id;
+
+        const div = document.createElement('div');
+        div.className = 'todo-item-v2'
+            + (item.completed ? ' done-item' : '')
+            + (isOverdue      ? ' overdue'   : '')
+            + (isExpanded     ? ' expanded'  : '');
+
+        // Due date
+        let dueDateHtml = '';
+        if (item.dueDate) {
+            const d     = new Date(item.dueDate + 'T12:00:00');
+            const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            dueDateHtml = `<span class="todo-due-date ${isOverdue ? 'overdue' : ''}">
+                ${isOverdue ? '⚠️' : '📅'} ${label}
+            </span>`;
+        }
+
+        // Badges
+        const sharedBadge = item.sharedToHousehold
+            ? '<span class="todo-shared-badge">shared</span>' : '';
+        const sourceBadge = item.source && item.source !== 'personal'
+            ? `<span class="todo-source-badge">${App.escapeHtml(item.source)}</span>` : '';
+
+        // Inline text or edit input
+        const textHtml = isEditing
+            ? `<input class="todo-inline-input" id="inline-edit-${item.id}"
+                      value="${App.escapeHtml(item.text)}"
+                      onblur="commitEdit('${item.id}')"
+                      onkeydown="handleEditKey(event,'${item.id}')" />`
+            : `<span class="todo-text-v2 ${item.completed ? 'done' : ''}"
+                     onclick="startEdit('${item.id}')">
+                   ${App.escapeHtml(item.text)}
+               </span>`;
+
+        // Note preview
+        const noteHtml = item.note
+            ? `<div class="todo-note-preview">📄 ${App.escapeHtml(item.note.split('\n')[0])}</div>`
+            : '';
+
+        // Share/Unshare (personal list only)
+        let shareHtml = '';
+        if (currentTab === 'personal') {
+            shareHtml = item.sharedToHousehold
+                ? `<button class="btn-share" onclick="unshareItem('${item.id}')">Unshare</button>`
+                : `<button class="btn-share" onclick="shareItem('${item.id}')">Share</button>`;
+        }
+
+        div.innerHTML = `
+            <div class="todo-item-main">
+                ${isManual ? `
+                    <div class="order-btns">
+                        <button class="order-btn" onclick="moveItem('${item.id}',-1)"
+                                ${idx === 0 ? 'disabled' : ''}>▲</button>
+                        <button class="order-btn" onclick="moveItem('${item.id}',1)"
+                                ${idx === items.length - 1 ? 'disabled' : ''}>▼</button>
+                    </div>` : ''}
+                <input type="checkbox" class="todo-checkbox-v2"
+                       ${item.completed ? 'checked' : ''}
+                       onchange="toggleComplete('${item.id}', this.checked)" />
+                <div class="todo-body-v2">
+                    ${textHtml}
+                    ${noteHtml}
+                    <div class="todo-meta-row">
+                        ${dueDateHtml}
+                        ${sharedBadge}
+                        ${sourceBadge}
+                    </div>
+                </div>
+                <div class="todo-item-actions-v2">
+                    <button class="todo-expand-btn" onclick="toggleExpand('${item.id}')">
+                        ${isExpanded ? '▲' : '▼'}
+                    </button>
+                </div>
+            </div>
+
+            <div class="todo-expanded-panel ${isExpanded ? 'open' : ''}">
+                <div class="expanded-row">
+                    <span class="expanded-label">Due</span>
+                    <input class="expanded-input" type="date"
+                           id="exp-due-${item.id}" value="${item.dueDate || ''}" />
+                </div>
+                <div class="expanded-row">
+                    <span class="expanded-label">Note</span>
+                    <textarea class="expanded-input" id="exp-note-${item.id}"
+                              rows="2" style="resize:none"
+                              placeholder="Add details...">${App.escapeHtml(item.note || '')}</textarea>
+                </div>
+                <div class="expanded-actions">
+                    ${shareHtml}
+                    <button class="btn-danger" onclick="deleteItem('${item.id}')">Delete</button>
+                    <button class="btn btn-primary"
+                            style="margin-left:auto;padding:.45rem .9rem;font-size:.82rem"
+                            onclick="saveExpanded('${item.id}')">Save</button>
+                </div>
+            </div>
+        `;
+
+        container.appendChild(div);
+    });
+}
+
+// ── Data Helpers ───────────────────────────────────────────────
+function findItem(id) {
+    return currentData().items.find(i => i.id === id) || null;
+}
+
+function getSortedItems() {
+    const items = [...currentData().items];
+    if (sortMode === 'manual') {
+        return items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
+    if (sortMode === 'due') {
+        return items.sort((a, b) => {
+            if (!a.dueDate && !b.dueDate) return 0;
+            if (!a.dueDate) return 1;
+            if (!b.dueDate) return -1;
+            return a.dueDate.localeCompare(b.dueDate);
+        });
+    }
+    if (sortMode === 'added') {
+        return items.sort((a, b) =>
+            (a.createdAt || '').localeCompare(b.createdAt || ''));
+    }
+    return items;
+}
+
+function getFilteredItems() {
+    const sorted = getSortedItems();
+    if (filterMode === 'active')    return sorted.filter(i => !i.completed);
+    if (filterMode === 'completed') return sorted.filter(i =>  i.completed);
+    return sorted;
+}
+
+// ── Save Helpers ───────────────────────────────────────────────
+async function save() {
+    if (currentTab === 'personal') await savePersonal();
+    else                           await saveHousehold();
+}
+
+async function savePersonal() {
+    const r = await XApi.putDocument(session, personalUrl(), personalData);
+    if (!r.ok && r.status !== 204) {
+        App.showToast('Save failed.', 'error');
+        const fresh = await XApi.getDocument(session, personalUrl());
+        if (fresh) { personalData = fresh; render(); }
+    }
+}
+
+async function saveHousehold() {
+    const r = await XApi.putDocument(session, householdUrl(), householdData);
+    if (!r.ok && r.status !== 204) {
+        App.showToast('Save failed.', 'error');
+        const fresh = await XApi.getDocument(session, householdUrl());
+        if (fresh) { householdData = fresh; render(); }
+    }
+}
 </script>
 </body>
 </html>
