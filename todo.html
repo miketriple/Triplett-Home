@@ -82,8 +82,6 @@ const session = Auth.requireSession();
 if (!session) throw new Error('No session');
 Theme.renderPanel();
 
-const ACTIVITY_BASE = 'https://the12414.com/activities';
-
 let currentTab    = 'personal';
 let filterMode    = 'all';
 let sortMode      = 'manual';
