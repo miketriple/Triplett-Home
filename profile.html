@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The 12414 — Profile</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/theme.js"></script>
+</head>
+<body>
+
+<header class="sub-header">
+    <button class="btn-back" onclick="window.location.href='home.html'">←</button>
+    <h2>My Profile</h2>
+    <button class="btn btn-ghost" id="save-btn" onclick="saveAll()">Save</button>
+</header>
+
+<div class="page-content">
+
+    <!-- Hero: Avatar + Name -->
+    <div class="profile-hero">
+
+        <!-- Avatar -->
+        <div class="profile-avatar-wrap" onclick="document.getElementById('avatar-upload').click()">
+            <div id="profile-avatar-display"></div>
+            <div class="avatar-edit-badge">📷</div>
+        </div>
+        <input type="file" id="avatar-upload" accept="image/*" style="display:none"
+               onchange="handleAvatarUpload(this)" />
+
+        <!-- Display Name -->
+        <input class="profile-name-input" type="text"
+               id="display-name-input" placeholder="Your name"
+               onchange="onNameChange()" />
+
+        <div class="profile-login-name" id="login-name-label"></div>
+
+    </div>
+
+    <!-- Streak -->
+    <div class="profile-section" id="streak-section" style="display:none">
+        <div class="profile-section-title">Activity Streak</div>
+        <div class="streak-display">
+            <div class="streak-flame">🔥</div>
+            <div class="streak-info">
+                <div class="streak-count" id="streak-count">0</div>
+                <div class="streak-label">Day Streak</div>
+            </div>
+            <div style="font-size:0.78rem;color:var(--text-muted);text-align:right">
+                <div id="streak-points" style="font-weight:700;color:var(--primary)"></div>
+                <div>total points</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Avatar Color -->
+    <div class="profile-section">
+        <div class="profile-section-title">Avatar Color</div>
+        <div id="color-grid-area"></div>
+        <div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.5rem">
+            Used as your accent color across the app when no photo is set.
+        </div>
+    </div>
+
+    <!-- Avatar Photo -->
+    <div class="profile-section">
+        <div class="profile-section-title">Profile Photo</div>
+        <div class="avatar-upload-area">
+            <div id="photo-preview"></div>
+            <div class="avatar-upload-actions">
+                <button class="btn btn-secondary"
+                        onclick="document.getElementById('avatar-upload').click()">
+                    📷 Choose Photo
+                </button>
+                <button class="btn btn-secondary" id="remove-photo-btn"
+                        onclick="removePhoto()" style="display:none">
+                    🗑 Remove Photo
+                </button>
+            </div>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text-muted)">
+            Photo is cropped to a circle and stored privately in your profile.
+            Max 150×150px after processing.
+        </div>
+    </div>
+
+    <!-- Appearance -->
+    <div class="profile-section">
+        <div class="profile-section-title">Appearance</div>
+
+        <div class="section-label">Color Theme</div>
+        <div id="profile-theme-swatches" class="theme-swatches" style="margin-bottom:1rem"></div>
+
+        <div class="section-label">Mode</div>
+        <div id="profile-mode-buttons" class="mode-buttons"></div>
+    </div>
+
+    <!-- Sign Out -->
+    <div class="profile-section">
+        <button class="signout-btn" onclick="Auth.logout()">Sign Out</button>
+    </div>
+
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/xapi.js"></script>
+<script src="js/app.js"></script>
+<script src="js/avatar.js"></script>
+<script>
+const session = Auth.requireSession();
+if (!session) throw new Error('No session');
+
+let profile      = null;
+let pendingImage = null; // base64 of newly uploaded photo, not yet saved
+
+// ── Init ───────────────────────────────────────────────────────
+async function init() {
+    profile = await Avatar.loadProfile(session);
+    Avatar.applyProfileTheme(profile);
+
+    // Display name
+    document.getElementById('display-name-input').value = profile.displayName || session.displayName;
+    document.getElementById('login-name-label').textContent = 'Login: ' + session.traxUsername.toLowerCase();
+
+    // Streak
+    if (profile.streakCount > 0) {
+        document.getElementById('streak-section').style.display = '';
+        document.getElementById('streak-count').textContent  = profile.streakCount;
+        document.getElementById('streak-points').textContent = profile.points || 0;
+    }
+
+    renderAvatar();
+    renderColorGrid();
+    renderThemeControls();
+}
+init();
+
+// ── Avatar Rendering ───────────────────────────────────────────
+function renderAvatar() {
+    const display = document.getElementById('profile-avatar-display');
+    const preview = document.getElementById('photo-preview');
+    const removeBtn = document.getElementById('remove-photo-btn');
+
+    const src = pendingImage || profile.avatarImage;
+
+    // Hero avatar
+    display.innerHTML = '';
+    const heroEl = Avatar.render({
+        ...profile,
+        avatarImage: src,
+    }, 'xxl');
+    display.appendChild(heroEl);
+
+    // Photo preview
+    preview.innerHTML = '';
+    const previewEl = Avatar.render({
+        ...profile,
+        avatarImage: src,
+    }, 'lg');
+    preview.appendChild(previewEl);
+
+    removeBtn.style.display = (src) ? '' : 'none';
+}
+
+// ── Color Grid ─────────────────────────────────────────────────
+function renderColorGrid() {
+    document.getElementById('color-grid-area').innerHTML =
+        Avatar.colorGridHtml(profile.avatarColor);
+    renderAvatar();
+}
+
+function selectAvatarColor(color) {
+    profile.avatarColor = color;
+    renderColorGrid();
+}
+
+// ── Photo Upload ───────────────────────────────────────────────
+async function handleAvatarUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    try {
+        pendingImage = await Avatar.resizeImage(file, 150);
+        renderAvatar();
+        App.showToast('Photo ready — tap Save to apply.');
+    } catch (err) {
+        App.showToast('Could not process image.', 'error');
+    }
+
+    input.value = ''; // reset so same file can be re-selected
+}
+
+function removePhoto() {
+    pendingImage       = null;
+    profile.avatarImage = null;
+    renderAvatar();
+}
+
+// ── Display Name ───────────────────────────────────────────────
+function onNameChange() {
+    const val = document.getElementById('display-name-input').value.trim();
+    if (val) {
+        profile.displayName = val;
+        renderAvatar();
+    }
+}
+
+// ── Theme Controls ─────────────────────────────────────────────
+function renderThemeControls() {
+    const THEMES = [
+        { id: 'forest-green',    label: 'Forest',   color: '#2d6a4f' },
+        { id: 'red-black-white', label: 'Cardinal', color: '#c1121f' },
+        { id: 'purple-indigo',   label: 'Indigo',   color: '#5c4db1' },
+        { id: 'slate-gray',      label: 'Slate',    color: '#475569' },
+        { id: 'sunset-orange',   label: 'Sunset',   color: '#c2410c' },
+        { id: 'ocean-blue',      label: 'Ocean',    color: '#0369a1' },
+    ];
+
+    document.getElementById('profile-theme-swatches').innerHTML =
+        THEMES.map(t => `
+            <button class="theme-swatch ${t.id === profile.theme ? 'active' : ''}"
+                    onclick="selectTheme('${t.id}')">
+                <div class="swatch-dot" style="background:${t.color}"></div>
+                ${t.label}
+            </button>
+        `).join('');
+
+    document.getElementById('profile-mode-buttons').innerHTML =
+        [
+            { id: 'system', icon: '⚙', label: 'System' },
+            { id: 'light',  icon: '☀', label: 'Light'  },
+            { id: 'dark',   icon: '☾', label: 'Dark'   },
+        ].map(m => `
+            <button class="mode-btn ${m.id === profile.mode ? 'active' : ''}"
+                    onclick="selectMode('${m.id}')">
+                ${m.icon} ${m.label}
+            </button>
+        `).join('');
+}
+
+function selectTheme(id) {
+    profile.theme = id;
+    Theme.setTheme(id); // applies immediately
+    renderThemeControls();
+}
+
+function selectMode(mode) {
+    profile.mode = mode;
+    Theme.setMode(mode); // applies immediately
+    renderThemeControls();
+}
+
+// ── Save All ───────────────────────────────────────────────────
+async function saveAll() {
+    const btn  = document.getElementById('save-btn');
+    btn.textContent = 'Saving...';
+    btn.disabled    = true;
+
+    // Commit pending image
+    if (pendingImage !== null) {
+        profile.avatarImage = pendingImage;
+        pendingImage = null;
+    }
+
+    // Commit display name
+    const nameVal = document.getElementById('display-name-input').value.trim();
+    if (nameVal) profile.displayName = nameVal;
+
+    await Avatar.saveProfile(session, profile);
+
+    // Update session display name in sessionStorage
+    const stored = JSON.parse(sessionStorage.getItem('12414-session') || '{}');
+    stored.displayName = profile.displayName;
+    sessionStorage.setItem('12414-session', JSON.stringify(stored));
+
+    btn.textContent = 'Saved ✓';
+    btn.disabled    = false;
+    setTimeout(() => { btn.textContent = 'Save'; }, 2000);
+
+    App.showToast('Profile saved!');
+    renderAvatar();
+}
+</script>
+</body>
+</html>

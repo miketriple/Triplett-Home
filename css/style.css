@@ -1832,3 +1832,244 @@ body {
     display: flex;
     justify-content: center;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   AVATAR SYSTEM — Phase 1
+═══════════════════════════════════════════════════════════ */
+
+/* ── Avatar Base ─────────────────────────────────────────── */
+.avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 700;
+    font-family: var(--font-ui);
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.25);
+    background: var(--primary);
+    color: white;
+    user-select: none;
+    position: relative;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* ── Avatar Sizes ────────────────────────────────────────── */
+.avatar-xs  { width: 24px;  height: 24px;  font-size: 0.6rem;  border-width: 1.5px; }
+.avatar-sm  { width: 32px;  height: 32px;  font-size: 0.8rem;  border-width: 2px;   }
+.avatar-md  { width: 42px;  height: 42px;  font-size: 1rem;    border-width: 2px;   }
+.avatar-lg  { width: 64px;  height: 64px;  font-size: 1.5rem;  border-width: 3px;   }
+.avatar-xl  { width: 96px;  height: 96px;  font-size: 2.2rem;  border-width: 3px;   }
+.avatar-xxl { width: 120px; height: 120px; font-size: 2.8rem;  border-width: 4px;   }
+
+/* ── Avatar Stack (multiple avatars overlapping) ─────────── */
+.avatar-stack {
+    display: flex;
+    align-items: center;
+}
+.avatar-stack .avatar {
+    margin-left: -8px;
+    border: 2px solid var(--bg-card);
+}
+.avatar-stack .avatar:first-child { margin-left: 0; }
+
+/* ── Avatar in Header ────────────────────────────────────── */
+.header-avatar-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-full);
+    transition: opacity var(--transition);
+}
+.header-avatar-btn:hover { opacity: 0.85; }
+
+/* ── Color Picker Grid ───────────────────────────────────── */
+.color-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+}
+
+.color-swatch {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all var(--transition);
+    position: relative;
+}
+.color-swatch:hover  { transform: scale(1.12); }
+.color-swatch.active {
+    border-color: var(--text);
+    transform: scale(1.12);
+}
+.color-swatch.active::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 900;
+}
+
+/* ── Profile Page ────────────────────────────────────────── */
+.profile-hero {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+    padding: 2rem 1.25rem 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.profile-avatar-wrap {
+    position: relative;
+    cursor: pointer;
+}
+
+.profile-avatar-wrap:hover .avatar-edit-badge { opacity: 1; }
+
+.avatar-edit-badge {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 28px;
+    height: 28px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    box-shadow: var(--shadow-sm);
+    opacity: 0.9;
+    transition: opacity var(--transition);
+    cursor: pointer;
+}
+
+.profile-name {
+    font-family: var(--font);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    text-align: center;
+}
+
+.profile-name-input {
+    font-family: var(--font);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: white;
+    text-align: center;
+    background: rgba(255,255,255,0.15);
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: var(--radius-md);
+    padding: 0.3rem 0.75rem;
+    outline: none;
+    width: 100%;
+    max-width: 220px;
+}
+
+.profile-login-name {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.6);
+}
+
+/* ── Profile Sections ────────────────────────────────────── */
+.profile-section {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-light);
+}
+
+.profile-section-title {
+    font-family: var(--font);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--text);
+}
+
+/* ── Avatar Upload Preview ───────────────────────────────── */
+.avatar-upload-area {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.avatar-upload-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+/* ── Streak Display ──────────────────────────────────────── */
+.streak-display {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.streak-flame {
+    font-size: 1.75rem;
+    line-height: 1;
+}
+
+.streak-info { flex: 1; }
+.streak-count {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1;
+}
+.streak-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ── Sign Out Button ─────────────────────────────────────── */
+.signout-btn {
+    width: 100%;
+    padding: 0.85rem;
+    background: transparent;
+    color: #ef4444;
+    border: 2px solid #fecaca;
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    transition: all var(--transition);
+    margin-top: 0.5rem;
+}
+.signout-btn:hover { background: #fef2f2; }
