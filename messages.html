@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The 12414 — Messages</title>
+    <link rel="stylesheet" href="css/style.css?v=2">
+    <script src="js/theme.js"></script>
+</head>
+<body>
+
+<header class="sub-header">
+    <button class="btn-back" onclick="window.location.href='home.html'">←</button>
+    <h2>Family Messages</h2>
+    <div id="header-avatar-area"></div>
+    <button class="btn btn-ghost" onclick="Theme.openPanel()">⚙</button>
+</header>
+
+<div class="page-content">
+
+    <!-- Compose -->
+    <div class="compose-card">
+        <div class="compose-top">
+            <div id="compose-avatar"></div>
+            <textarea class="compose-textarea" id="compose-text"
+                      placeholder="What's on your mind?"
+                      maxlength="500"
+                      oninput="updateCharCount()"></textarea>
+        </div>
+
+        <!-- Emoji Picker -->
+        <div class="emoji-picker-panel" id="compose-emoji-picker">
+            <!-- populated by JS -->
+        </div>
+
+        <div class="compose-bottom">
+            <button class="compose-emoji-btn" id="emoji-toggle-btn"
+                    onclick="toggleEmojiPicker()" title="Add emoji prefix">😊</button>
+            <span class="compose-char-count" id="char-count">500</span>
+            <button class="btn btn-primary"
+                    style="padding:.55rem 1.1rem;font-size:.88rem"
+                    onclick="postMessage()">Post</button>
+        </div>
+    </div>
+
+    <!-- Feed -->
+    <div id="post-feed" class="post-feed">
+        <div class="loading">Loading messages...</div>
+    </div>
+
+    <!-- Load More -->
+    <div id="load-more-area"></div>
+
+</div>
+
+<!-- Theme Panel -->
+<div id="theme-overlay" class="theme-overlay"
+     onclick="App.handleOverlayClick(event,'theme-overlay')">
+    <div class="theme-panel">
+        <div class="theme-panel-header">
+            <h3>Appearance</h3>
+            <button class="btn-icon" onclick="Theme.closePanel()">✕</button>
+        </div>
+        <div class="section-label">Color Theme</div>
+        <div id="theme-swatches" class="theme-swatches"></div>
+        <div class="section-label">Mode</div>
+        <div id="mode-buttons" class="mode-buttons"></div>
+    </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/xapi.js"></script>
+<script src="js/app.js"></script>
+<script src="js/avatar.js"></script>
+<script>
+const session = Auth.requireSession();
+if (!session) throw new Error('No session');
+Theme.renderPanel();
+
+// ── Constants ──────────────────────────────────────────────────
+const MAX_LENGTH    = 500;
+const PAGE_SIZE     = 20;
+const REACTION_EMOJI = ['❤️','😂','👍','😮','🔥','🎉','😢','👏','🙏','😍'];
+const PREFIX_EMOJI   = ['😊','😂','❤️','🔥','👀','🙌','😮','😎','🤔','😅',
+                        '🥳','😴','🤣','💪','🥰','😬','👋','✨','🎉','😤'];
+
+// ── State ──────────────────────────────────────────────────────
+let profile        = null;
+let boardData      = { posts: [] };
+let selectedEmoji  = null;
+let visibleCount   = PAGE_SIZE;
+let openPickerId   = null; // id of post whose reaction picker is open
+
+// ── URL ────────────────────────────────────────────────────────
+function boardUrl() {
+    return session.endpoint + '/activities/profile'
+        + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/message-board')
+        + '&profileId=family-messages';
+}
+
+// ── Init ───────────────────────────────────────────────────────
+async function init() {
+    profile = await Avatar.loadProfile(session);
+    Avatar.applyProfileTheme(profile);
+    Avatar.updateHeader(profile);
+
+    // Compose avatar
+    const composeAvatarEl = document.getElementById('compose-avatar');
+    composeAvatarEl.appendChild(Avatar.render(profile, 'sm'));
+
+    // Emoji picker
+    renderPrefixPicker();
+
+    // Load board
+    const data = await XApi.getDocument(session, boardUrl());
+    boardData  = data || { posts: [] };
+    render();
+
+    // Record activity for streak
+    await Avatar.recordActivity(session, profile);
+}
+init();
+
+// ── Compose ────────────────────────────────────────────────────
+function updateCharCount() {
+    const text  = document.getElementById('compose-text').value;
+    const left  = MAX_LENGTH - text.length;
+    const el    = document.getElementById('char-count');
+    el.textContent = left;
+    el.className   = 'compose-char-count'
+        + (left <= 50 && left > 10 ? ' near-limit' : '')
+        + (left <= 10             ? ' at-limit'   : '');
+}
+
+function toggleEmojiPicker() {
+    const picker = document.getElementById('compose-emoji-picker');
+    picker.classList.toggle('open');
+}
+
+function renderPrefixPicker() {
+    const picker = document.getElementById('compose-emoji-picker');
+    picker.innerHTML = PREFIX_EMOJI.map(e => `
+        <span class="emoji-option ${e === selectedEmoji ? 'selected' : ''}"
+              onclick="selectPrefixEmoji('${e}')">${e}</span>
+    `).join('') + `
+        <span class="emoji-option ${selectedEmoji === null ? '' : ''}"
+              onclick="clearPrefixEmoji()"
+              style="font-size:0.8rem;padding:.3rem .5rem;color:var(--text-muted)">
+            none
+        </span>`;
+}
+
+function selectPrefixEmoji(emoji) {
+    selectedEmoji = emoji;
+    const btn = document.getElementById('emoji-toggle-btn');
+    btn.textContent = emoji;
+    btn.classList.add('has-emoji');
+    document.getElementById('compose-emoji-picker').classList.remove('open');
+    renderPrefixPicker();
+}
+
+function clearPrefixEmoji() {
+    selectedEmoji = null;
+    document.getElementById('emoji-toggle-btn').textContent = '😊';
+    document.getElementById('emoji-toggle-btn').classList.remove('has-emoji');
+    document.getElementById('compose-emoji-picker').classList.remove('open');
+    renderPrefixPicker();
+}
+
+async function postMessage() {
+    const textarea = document.getElementById('compose-text');
+    const text     = textarea.value.trim();
+    if (!text) return;
+
+    const newPost = {
+        id:          App.randomId(),
+        text,
+        emoji:       selectedEmoji,
+        authorName:  profile.displayName || session.displayName,
+        authorColor: profile.avatarColor,
+        authorImage: profile.avatarImage || null,
+        authorMbox:  session.mbox,
+        createdAt:   new Date().toISOString(),
+        reactions:   {},
+    };
+
+    // Prepend so newest is first
+    boardData.posts.unshift(newPost);
+
+    const response = await XApi.putDocument(session, boardUrl(), boardData);
+    if (response.ok || response.status === 204) {
+        textarea.value = '';
+        selectedEmoji  = null;
+        visibleCount   = PAGE_SIZE;
+        document.getElementById('emoji-toggle-btn').textContent = '😊';
+        document.getElementById('emoji-toggle-btn').classList.remove('has-emoji');
+        updateCharCount();
+        render();
+
+        XApi.sendStatement(session, 'posted', 'posted',
+            ACTIVITY_BASE + '/message-board', 'Family Messages');
+    } else {
+        App.showToast('Could not post. Please try again.', 'error');
+        boardData.posts.shift(); // revert
+    }
+}
+
+// Allow Ctrl+Enter to post
+document.getElementById('compose-text').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) postMessage();
+});
+
+// ── Reactions ──────────────────────────────────────────────────
+async function toggleReaction(postId, emoji) {
+    const post = boardData.posts.find(p => p.id === postId);
+    if (!post) return;
+
+    if (!post.reactions) post.reactions = {};
+    if (!post.reactions[emoji]) post.reactions[emoji] = [];
+
+    const name  = profile.displayName || session.displayName;
+    const idx   = post.reactions[emoji].indexOf(name);
+
+    if (idx === -1) {
+        post.reactions[emoji].push(name);
+    } else {
+        post.reactions[emoji].splice(idx, 1);
+        if (post.reactions[emoji].length === 0) delete post.reactions[emoji];
+    }
+
+    closeReactionPicker();
+    await XApi.putDocument(session, boardUrl(), boardData);
+    render();
+}
+
+function openReactionPicker(postId) {
+    closeReactionPicker();
+    openPickerId = postId;
+    const picker = document.getElementById('rpicker-' + postId);
+    if (picker) picker.classList.add('open');
+}
+
+function closeReactionPicker() {
+    if (openPickerId) {
+        const picker = document.getElementById('rpicker-' + openPickerId);
+        if (picker) picker.classList.remove('open');
+        openPickerId = null;
+    }
+}
+
+// Close pickers on outside click
+document.addEventListener('click', e => {
+    if (!e.target.closest('.reaction-picker-wrap') &&
+        !e.target.closest('.add-reaction-btn')) {
+        closeReactionPicker();
+    }
+    if (!e.target.closest('.compose-emoji-btn') &&
+        !e.target.closest('.emoji-picker-panel')) {
+        document.getElementById('compose-emoji-picker').classList.remove('open');
+    }
+});
+
+// ── Delete Post ────────────────────────────────────────────────
+async function deletePost(postId) {
+    const post = boardData.posts.find(p => p.id === postId);
+    if (!post) return;
+    if (post.authorMbox !== session.mbox) return; // can only delete own posts
+
+    boardData.posts = boardData.posts.filter(p => p.id !== postId);
+    await XApi.putDocument(session, boardUrl(), boardData);
+    render();
+    App.showToast('Message deleted.');
+}
+
+// ── Load More ──────────────────────────────────────────────────
+function loadMore() {
+    visibleCount += PAGE_SIZE;
+    render();
+}
+
+// ── Render ─────────────────────────────────────────────────────
+function render() {
+    const feed     = document.getElementById('post-feed');
+    const moreArea = document.getElementById('load-more-area');
+    const posts    = boardData.posts;
+    const myName   = profile.displayName || session.displayName;
+
+    if (posts.length === 0) {
+        feed.innerHTML = `
+            <div class="empty-state">
+                <span class="empty-icon">💬</span>
+                <p>No messages yet — be the first to post!</p>
+            </div>`;
+        moreArea.innerHTML = '';
+        return;
+    }
+
+    const visible = posts.slice(0, visibleCount);
+
+    feed.innerHTML = visible.map(post => {
+        const isOwn    = post.authorMbox === session.mbox;
+        const timeAgo  = formatTimeAgo(post.createdAt);
+        const postAvatar = Avatar.html({
+            displayName: post.authorName,
+            avatarColor: post.authorColor || '#2d6a4f',
+            avatarImage: post.authorImage || null,
+        }, 'sm');
+
+        // Reactions
+        const reactionBtns = Object.entries(post.reactions || {})
+            .filter(([, names]) => names.length > 0)
+            .map(([emoji, names]) => {
+                const mine    = names.includes(myName);
+                const tooltip = names.join(', ');
+                return `<button class="reaction-btn ${mine ? 'mine' : ''}"
+                                onclick="toggleReaction('${post.id}','${emoji}')"
+                                title="${App.escapeHtml(tooltip)}">
+                            <span class="reaction-emoji">${emoji}</span>
+                            <span class="reaction-count">${names.length}</span>
+                        </button>`;
+            }).join('');
+
+        // Reaction picker
+        const pickerOptions = REACTION_EMOJI.map(e => `
+            <span class="emoji-option" onclick="toggleReaction('${post.id}','${e}')">${e}</span>
+        `).join('');
+
+        return `
+            <div class="post-card" id="post-${post.id}">
+                <div class="post-header">
+                    ${postAvatar}
+                    <div class="post-author-info">
+                        <div class="post-author-name">${App.escapeHtml(post.authorName)}</div>
+                        <div class="post-timestamp">${timeAgo}</div>
+                    </div>
+                    ${isOwn
+                        ? `<button class="post-delete-btn"
+                                   onclick="deletePost('${post.id}')"
+                                   title="Delete">✕</button>`
+                        : ''}
+                </div>
+                <div class="post-body">
+                    ${post.emoji ? `<span class="post-emoji-prefix">${post.emoji}</span>` : ''}${App.escapeHtml(post.text)}
+                </div>
+                <div class="post-reactions">
+                    ${reactionBtns}
+                    <div class="reaction-picker-wrap">
+                        <button class="add-reaction-btn"
+                                onclick="openReactionPicker('${post.id}')">+ 😊</button>
+                        <div class="reaction-picker" id="rpicker-${post.id}">
+                            ${pickerOptions}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Load more button
+    moreArea.innerHTML = posts.length > visibleCount
+        ? `<button class="load-more-btn" onclick="loadMore()">
+               Load ${Math.min(PAGE_SIZE, posts.length - visibleCount)} more messages
+           </button>`
+        : '';
+}
+
+// ── Time Formatting ────────────────────────────────────────────
+function formatTimeAgo(isoString) {
+    const diff = Date.now() - new Date(isoString).getTime();
+    const mins  = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days  = Math.floor(diff / 86400000);
+
+    if (mins  < 1)  return 'just now';
+    if (mins  < 60) return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days  < 7)  return `${days}d ago`;
+
+    return new Date(isoString).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric'
+    });
+}
+</script>
+</body>
+</html>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The 12414 — To-Do</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=2">
     <script src="js/theme.js"></script>
 </head>
 <body>
@@ -87,6 +87,8 @@ Avatar.loadProfile(session).then(p => {
     Avatar.applyProfileTheme(p);
     Avatar.updateHeader(p);
 });
+
+const ACTIVITY_BASE = 'https://the12414.com/activities';
 
 let currentTab    = 'personal';
 let filterMode    = 'all';

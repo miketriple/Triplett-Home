@@ -2329,3 +2329,249 @@ body {
     font-weight: 600;
     white-space: nowrap;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   MESSAGE BOARD — Phase 3
+═══════════════════════════════════════════════════════════ */
+
+/* ── Compose Area ────────────────────────────────────────── */
+.compose-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-light);
+}
+
+.compose-top {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.compose-textarea {
+    flex: 1;
+    padding: 0.65rem 0.85rem;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    color: var(--text);
+    font-family: var(--font-ui);
+    resize: none;
+    outline: none;
+    transition: border-color var(--transition);
+    line-height: 1.5;
+    min-height: 72px;
+}
+.compose-textarea:focus { border-color: var(--primary); }
+.compose-textarea::placeholder { color: var(--text-light); }
+
+.compose-bottom {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.compose-emoji-btn {
+    background: var(--bg-secondary);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.45rem 0.6rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all var(--transition);
+    font-family: var(--font-ui);
+    line-height: 1;
+}
+.compose-emoji-btn:hover { background: var(--border); }
+.compose-emoji-btn.has-emoji { border-color: var(--primary); background: var(--primary-subtle); }
+
+.compose-char-count {
+    font-size: 0.72rem;
+    color: var(--text-light);
+    margin-left: auto;
+    font-weight: 600;
+    transition: color var(--transition);
+}
+.compose-char-count.near-limit { color: #f59e0b; }
+.compose-char-count.at-limit   { color: #ef4444; }
+
+/* ── Emoji Picker ────────────────────────────────────────── */
+.emoji-picker-panel {
+    display: none;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0.6rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    margin-top: 0.5rem;
+    border: 1px solid var(--border);
+}
+.emoji-picker-panel.open { display: flex; }
+
+.emoji-option {
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 0.2rem 0.3rem;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition);
+    line-height: 1;
+    border: 2px solid transparent;
+}
+.emoji-option:hover    { background: var(--border); }
+.emoji-option.selected { border-color: var(--primary); background: var(--primary-subtle); }
+
+/* ── Post Feed ───────────────────────────────────────────── */
+.post-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.post-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem;
+    box-shadow: var(--shadow-xs);
+    border: 1px solid var(--border-light);
+    transition: box-shadow var(--transition);
+}
+.post-card:hover { box-shadow: var(--shadow-sm); }
+
+.post-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+}
+
+.post-author-info { flex: 1; min-width: 0; }
+
+.post-author-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+}
+
+.post-timestamp {
+    font-size: 0.68rem;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.post-delete-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-light);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0.2rem 0.35rem;
+    border-radius: var(--radius-xs);
+    transition: all var(--transition);
+    font-family: var(--font-ui);
+    opacity: 0;
+    transition: opacity var(--transition);
+}
+.post-card:hover .post-delete-btn { opacity: 1; }
+.post-delete-btn:hover { color: #ef4444; background: #fef2f2; }
+
+.post-body {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--text);
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.post-emoji-prefix {
+    font-size: 1.15rem;
+    margin-right: 0.3rem;
+    vertical-align: -0.1em;
+}
+
+/* ── Reactions ───────────────────────────────────────────── */
+.post-reactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.65rem;
+}
+
+.reaction-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-full);
+    border: 1.5px solid var(--border);
+    background: var(--bg-secondary);
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: all var(--transition);
+    line-height: 1;
+}
+.reaction-btn:hover  { border-color: var(--primary-light); color: var(--text); }
+.reaction-btn.mine   { border-color: var(--primary); background: var(--primary-subtle); color: var(--primary); }
+
+.reaction-emoji { font-size: 0.95rem; }
+.reaction-count { font-size: 0.75rem; }
+
+.add-reaction-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.55rem;
+    border-radius: var(--radius-full);
+    border: 1.5px dashed var(--border);
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-light);
+    transition: all var(--transition);
+    font-family: var(--font-ui);
+}
+.add-reaction-btn:hover { border-color: var(--primary-light); color: var(--text); }
+
+/* ── Reaction Picker ─────────────────────────────────────── */
+.reaction-picker {
+    display: none;
+    position: absolute;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 0.5rem;
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    max-width: 200px;
+}
+.reaction-picker.open { display: flex; }
+
+.reaction-picker-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+/* ── Load More ───────────────────────────────────────────── */
+.load-more-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--bg-secondary);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    transition: all var(--transition);
+    margin-top: 0.5rem;
+}
+.load-more-btn:hover { background: var(--border); color: var(--text); }

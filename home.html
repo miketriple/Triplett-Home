@@ -109,14 +109,14 @@
             <p>Shopping list</p>
         </a>
 
-        <div class="feature-card coming-soon">
+        <a href="messages.html" class="feature-card">
             <div class="feature-card-inner">
                 <span class="feature-icon">💬</span>
+                <div id="badge-messages" style="display:none" class="feature-badge"></div>
             </div>
             <h3>Messages</h3>
             <p>Family board</p>
-            <span class="coming-tag">Coming soon</span>
-        </div>
+        </a>
 
     </div>
 </div>
@@ -185,7 +185,7 @@ async function init() {
 
     // Load all data in parallel
     const today = new Date().toISOString().split('T')[0];
-    const [personalData, householdData, calData, dinnerCalData, libraryData, groceryData] =
+    const [personalData, householdData, calData, dinnerCalData, libraryData, groceryData, messagesData] =
         await Promise.all([
             XApi.getDocument(session, personalTodoUrl()),
             XApi.getDocument(session, householdTodoUrl()),
@@ -193,6 +193,7 @@ async function init() {
             XApi.getDocument(session, dinnerCalUrl()),
             XApi.getDocument(session, libraryUrl()),
             XApi.getDocument(session, groceryUrl()),
+            XApi.getDocument(session, messagesUrl()),
         ]);
 
     // ── At a Glance — Personal Tasks ──────────────────────────
@@ -320,6 +321,13 @@ async function init() {
         const newGrocery = groceryItems.filter(i =>
             i.addedAt && i.addedAt > lastVisit).length;
         if (newGrocery > 0) showBadge('badge-grocery', newGrocery);
+
+        // New messages
+        const posts      = messagesData?.posts || [];
+        const newMessages = posts.filter(p =>
+            p.createdAt && p.createdAt > lastVisit
+            && p.authorMbox !== session.mbox).length;
+        if (newMessages > 0) showBadge('badge-messages', newMessages);
     }
 }
 
@@ -383,6 +391,12 @@ function groceryUrl() {
     return session.endpoint + '/activities/profile'
         + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/grocery-list')
         + '&profileId=grocery-list';
+}
+
+function messagesUrl() {
+    return session.endpoint + '/activities/profile'
+        + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/message-board')
+        + '&profileId=family-messages';
 }
 </script>
 </body>
