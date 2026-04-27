@@ -173,8 +173,6 @@ function categorize(text) {
 }
 
 // ── URL ────────────────────────────────────────────────────────
-const ACTIVITY_BASE = 'https://the12414.com/activities';
-
 function groceryUrl() {
     return session.endpoint + '/activities/profile'
         + '?activityId=' + encodeURIComponent(ACTIVITY_BASE + '/grocery-list')
