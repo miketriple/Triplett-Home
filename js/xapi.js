@@ -31,28 +31,70 @@ const XApi = {
 
     // ── Statements ────────────────────────────────────────────
 
-    async sendStatement(session, verb, verbDisplay, activityId, activityName) {
-        const statement = {
-            actor: this.actor(session),
-            verb: {
-                id: 'https://the12414.com/verbs/' + verb,
-                display: { 'en-US': verbDisplay },
-            },
-            object: {
-                id: activityId,
-                objectType: 'Activity',
-                definition: { name: { 'en-US': activityName } },
-            },
-        };
+    async sendStatement(session, verb, verbDisplay, activityId, activityName, options = {}) {
+        const statement = this.buildStatement(
+            session,
+            verb,
+            verbDisplay,
+            activityId,
+            activityName,
+            options
+        );
 
         try {
-            await fetch(session.endpoint + '/statements', {
+            return await fetch(session.endpoint + '/statements', {
                 method: 'POST',
                 headers: this.headers(session),
                 body: JSON.stringify(statement),
             });
         } catch (err) {
             console.warn('xAPI statement failed:', err);
+            return null;
+        }
+    },
+
+    buildStatement(session, verb, verbDisplay, activityId, activityName, options = {}) {
+        const statement = {
+            actor: options.actor || this.actor(session),
+            verb: options.verb || {
+                id: options.verbId || this.verbId(verb),
+                display: options.verbDisplay || { 'en-US': verbDisplay },
+            },
+            object: options.object || {
+                id: activityId,
+                objectType: options.objectType || 'Activity',
+                definition: {
+                    name: options.activityName || { 'en-US': activityName },
+                    ...(options.activityDefinition || {}),
+                },
+            },
+        };
+
+        this._copyStatementOptions(statement, options);
+        return statement;
+    },
+
+    verbId(verb) {
+        if (verb && /^https?:\/\//i.test(verb)) return verb;
+        return 'https://the12414.com/verbs/' + verb;
+    },
+
+    _copyStatementOptions(statement, options) {
+        [
+            'id',
+            'result',
+            'context',
+            'timestamp',
+            'stored',
+            'authority',
+            'version',
+            'attachments',
+        ].forEach(key => {
+            if (options[key] !== undefined) statement[key] = options[key];
+        });
+
+        if (options.extra) {
+            Object.assign(statement, options.extra);
         }
     },
 
